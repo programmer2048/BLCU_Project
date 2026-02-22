@@ -1,32 +1,26 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
+using UnityEngine.SceneManagement;
 using System.Collections;
 
 /// <summary>
-/// Boot场景 —— 初始化所有管理器
-/// 这是游戏启动的第一个场景
+/// Boot场景 —— 极简版 (无动画，纯逻辑)
 /// </summary>
 public class BootSceneController : MonoBehaviour
 {
-    [Header("开始界面UI")]
-    public GameObject titlePanel;
-    public TextMeshProUGUI titleText;
+    [Header("核心按钮")]
     public Button startButton;
-    public Button quitButton;
+    public Button settingsButton;
+    public Button aboutButton;
+    public Button quitButton; // 建议保留，若不需要可在Inspector留空
 
-    [Header("加载界面UI")]
-    public TextMeshProUGUI loadingText;
-
-    [Header("自动进入主菜单")]
-    public bool autoEnterMainUI = true;
-    public float autoEnterDelay = 1.0f;
+    [Header("场景跳转配置")]
+    public string settingsSceneName = "SettingsScene";
+    public string aboutSceneName = "AboutScene";
 
     void Awake()
     {
-        Debug.Log("[Boot] 启动场景初始化...");
-
-        // 确保核心管理器存在（DontDestroyOnLoad）
+        // 1. 初始化核心管理器 (这一步绝对不能省，否则后面游戏会报错)
         EnsureManager<GameManager>("GameManager");
         EnsureManager<GameFlowManager>("GameFlowManager");
         EnsureManager<UIManager>("UIManager");
@@ -36,98 +30,80 @@ public class BootSceneController : MonoBehaviour
 
     void Start()
     {
-        AutoBindUIIfMissing();
-
-        if (titlePanel != null) titlePanel.SetActive(true);
-        if (titleText != null) titleText.text = "山河故人归\n点击开始旅程";
-
-        if (startButton != null)
-        {
-            startButton.onClick.RemoveAllListeners();
-            startButton.onClick.AddListener(OnClickStart);
-        }
-
-        if (quitButton != null)
-        {
-            quitButton.onClick.RemoveAllListeners();
-            quitButton.onClick.AddListener(OnClickQuit);
-        }
-
-        if (titlePanel == null && loadingText != null)
-        {
-            loadingText.text = "正在加载中...";
-        }
-
-        if (startButton == null && autoEnterMainUI)
-        {
-            StartCoroutine(AutoEnterMainUI());
-        }
+        // 绑定按钮事件
+        BindButton(startButton, OnClickStart);
+        BindButton(settingsButton, OnClickSettings);
+        BindButton(aboutButton, OnClickAbout);
+        BindButton(quitButton, OnClickQuit);
     }
 
-    private void AutoBindUIIfMissing()
-    {
-        if (titlePanel == null)
-            titlePanel = GameObject.Find("TitlePanel");
-
-        if (titleText == null)
-        {
-            var go = GameObject.Find("TitleText");
-            if (go != null) titleText = go.GetComponent<TextMeshProUGUI>();
-        }
-
-        if (startButton == null)
-        {
-            var go = GameObject.Find("StartButton");
-            if (go != null) startButton = go.GetComponent<Button>();
-        }
-
-        if (quitButton == null)
-        {
-            var go = GameObject.Find("QuitButton");
-            if (go != null) quitButton = go.GetComponent<Button>();
-        }
-
-        if (loadingText == null)
-        {
-            var go = GameObject.Find("LoadingText");
-            if (go != null) loadingText = go.GetComponent<TextMeshProUGUI>();
-        }
-    }
-
-    private IEnumerator AutoEnterMainUI()
-    {
-        if (loadingText != null)
-            loadingText.text = "正在加载中...";
-
-        yield return null;
-
-        if (autoEnterDelay > 0f)
-            yield return new WaitForSeconds(autoEnterDelay);
-
-        if (GameFlowManager.Instance != null)
-            GameFlowManager.Instance.GoToMainUI();
-        else
-            Debug.LogError("[Boot] GameFlowManager not found, cannot enter MainUI.");
-    }
-
+    // --- 点击逻辑 ---
     private void OnClickStart()
     {
-        if (GameFlowManager.Instance != null)
-            GameFlowManager.Instance.StartNewGameFromTitle();
-    }
+        Debug.Log("[Boot] 点击开始，准备异步加载...");
 
+        // 1. 禁用按钮，防止玩家狂点
+        startButton.interactable = false;
+
+        // 2. 开启协程进行后台加载
+        StartCoroutine(LoadSceneAsyncProcess());
+    }
+    IEnumerator LoadSceneAsyncProcess()
+    {
+        // 开始后台加载场景，假设下一个场景的 Build Index 是 1 (或者用名字 "01_MainUI")
+        // LoadSceneMode.Single 表示替换当前场景
+        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(1, LoadSceneMode.Single);
+        // 只要没加载完，就等待下一帧
+        while (!asyncLoad.isDone)
+        {
+            // 这里可以做一些事情，比如让 loading 图标转动
+            // float progress = asyncLoad.progress; 
+            // Debug.Log($"加载进度: {progress * 100}%");
+
+            yield return null;
+        }
+    }
+    private void OnClickSettings()
+    {
+        Debug.Log("[Boot] 进入设置");
+        if (!string.IsNullOrEmpty(settingsSceneName))
+        {
+            SceneManager.LoadScene(settingsSceneName);
+        }
+    }
+    private void OnClickAbout()
+    {
+        Debug.Log("[Boot] 进入关于");
+        if (!string.IsNullOrEmpty(aboutSceneName))
+        {
+            SceneManager.LoadScene(aboutSceneName);
+        }
+    }
     private void OnClickQuit()
     {
+        Debug.Log("[Boot] 退出游戏");
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
         Application.Quit();
+#endif
     }
-
+    // --- 辅助工具 ---
+    private void BindButton(Button btn, UnityEngine.Events.UnityAction action)
+    {
+        if (btn != null)
+        {
+            btn.onClick.RemoveAllListeners();
+            btn.onClick.AddListener(action);
+        }
+    }
     private void EnsureManager<T>(string name) where T : MonoBehaviour
     {
         if (Object.FindAnyObjectByType<T>() == null)
         {
             var go = new GameObject(name);
             go.AddComponent<T>();
-            Debug.Log($"[Boot] 创建管理器: {name}");
+            DontDestroyOnLoad(go);
         }
     }
 }
