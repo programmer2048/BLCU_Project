@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// 打工场景控制器 —— 切换三消/音游
@@ -38,8 +39,7 @@ public class PartTimeJobSceneController : MonoBehaviour
 
     void Update()
     {
-        if (selectionPanel == null || !selectionPanel.activeInHierarchy) return;
-
+        if (Keyboard.current == null || !Keyboard.current.spaceKey.wasPressedThisFrame) return;
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
             _pendingDifficulty = Match3Difficulty.Easy;

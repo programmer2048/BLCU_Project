@@ -134,27 +134,33 @@ public class RhythmController : MonoBehaviour
 
     private bool IsTrackKeyPressed(int track)
     {
+        // 1. 基础检查
         if (keyboardKeys == null || track < 0 || track >= keyboardKeys.Length) return false;
 
         KeyCode key = keyboardKeys[track];
-        if (Input.GetKeyDown(key)) return true;
 
+        // 2. 如果安装了 New Input System，优先使用新系统
 #if ENABLE_INPUT_SYSTEM
         var keyboard = Keyboard.current;
         if (keyboard != null)
         {
+            // 这里利用 switch 表达式把旧的 KeyCode 映射到新的 Input System
             return key switch
             {
                 KeyCode.D => keyboard.dKey.wasPressedThisFrame,
                 KeyCode.F => keyboard.fKey.wasPressedThisFrame,
                 KeyCode.J => keyboard.jKey.wasPressedThisFrame,
                 KeyCode.K => keyboard.kKey.wasPressedThisFrame,
+                // 如果你有其他按键（比如 A, S, W, Space），需要在这里补上
+                // KeyCode.Space => keyboard.spaceKey.wasPressedThisFrame,
                 _ => false
             };
         }
+        return false; // 如果新系统启用但没有键盘，返回 false
+#else
+        // 3. 只有在没安装新系统（或旧系统有效）时，才运行这行旧代码
+        return Input.GetKeyDown(key);
 #endif
-
-        return false;
     }
 
     private void OnTrackClick(int track)

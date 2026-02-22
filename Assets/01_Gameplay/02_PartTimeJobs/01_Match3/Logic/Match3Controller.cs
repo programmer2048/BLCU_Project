@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.InputSystem;
 
 public enum Match3Difficulty
 {
@@ -155,6 +156,7 @@ public class Match3Controller : MonoBehaviour
     {
         if (!_isPlaying) return;
 
+        // 1. 倒计时逻辑不变
         _timeRemaining -= Time.deltaTime;
         if (timerText != null)
             timerText.text = $"时间: {Mathf.CeilToInt(_timeRemaining)}s";
@@ -164,13 +166,22 @@ public class Match3Controller : MonoBehaviour
             EndGame();
         }
 
+        // 2. 输入检测逻辑 (修改部分)
         if (!_isResolving)
         {
-            if (Input.GetMouseButtonDown(1))
+            // 旧代码: if (Input.GetMouseButtonDown(1))
+            // 新代码: 检测鼠标是否存在，并且右键被按下
+            if (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
+            {
                 UseShuffleTool();
+            }
 
-            if (Input.GetKeyDown(KeyCode.Space))
+            // 旧代码: if (Input.GetKeyDown(KeyCode.Space))
+            // 新代码: 检测键盘是否存在，并且空格键被按下
+            if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+            {
                 TryUseHintTool();
+            }
         }
     }
 
