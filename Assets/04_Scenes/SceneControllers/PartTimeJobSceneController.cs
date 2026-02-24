@@ -19,10 +19,10 @@ public class PartTimeJobSceneController : MonoBehaviour
     public GameObject rhythmPanel;
 
     [Header("控制器")]
-    public Match3Controller match3Controller;
+    //public Match3Controller match3Controller;
     public RhythmController rhythmController;
 
-    private Match3Difficulty _pendingDifficulty = Match3Difficulty.Medium;
+    //private Match3Difficulty _pendingDifficulty = Match3Difficulty.Medium;
 
     void Start()
     {
@@ -42,17 +42,17 @@ public class PartTimeJobSceneController : MonoBehaviour
         if (Keyboard.current == null || !Keyboard.current.spaceKey.wasPressedThisFrame) return;
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            _pendingDifficulty = Match3Difficulty.Easy;
+            //_pendingDifficulty = Match3Difficulty.Easy;
             ApplyDifficultyLabel();
         }
         else if (Input.GetKeyDown(KeyCode.Alpha2))
         {
-            _pendingDifficulty = Match3Difficulty.Medium;
+            //_pendingDifficulty = Match3Difficulty.Medium;
             ApplyDifficultyLabel();
         }
         else if (Input.GetKeyDown(KeyCode.Alpha3))
         {
-            _pendingDifficulty = Match3Difficulty.Hard;
+            //_pendingDifficulty = Match3Difficulty.Hard;
             ApplyDifficultyLabel();
         }
     }
@@ -81,11 +81,13 @@ public class PartTimeJobSceneController : MonoBehaviour
         Debug.Log("[PartTimeJob] 选择: 拾光餐厅 (三消)");
         if (selectionPanel != null) selectionPanel.SetActive(false);
         if (match3Panel != null) match3Panel.SetActive(true);
+        /*
         if (match3Controller != null)
         {
             match3Controller.SetDifficulty(_pendingDifficulty);
             match3Controller.StartGame();
         }
+        */
     }
 
     private void StartRhythm()
@@ -115,10 +117,11 @@ public class PartTimeJobSceneController : MonoBehaviour
         var label = match3Button.GetComponentInChildren<TextMeshProUGUI>();
         if (label == null) return;
 
+        /*
         string difficultyText = _pendingDifficulty == Match3Difficulty.Easy
             ? "简单"
             : _pendingDifficulty == Match3Difficulty.Hard ? "困难" : "中等";
-
         label.text = $"拾光餐厅\n(三消游戏)\n难度: {difficultyText} [1/2/3]";
+        */
     }
 }
