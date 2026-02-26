@@ -13,6 +13,7 @@ public class M3_Piece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
     private Vector2 startAnchoredPos;
     private bool isDragging = false;
     private Canvas rootCanvas;
+    public Vector2 AnchoredPos => rectTransform.anchoredPosition;
     void Awake()
     {
         uiImage = GetComponent<Image>();

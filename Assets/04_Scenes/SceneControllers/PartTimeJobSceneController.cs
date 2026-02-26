@@ -18,9 +18,9 @@ public class PartTimeJobSceneController : MonoBehaviour
     public GameObject match3Panel;
     public GameObject rhythmPanel;
 
-    [Header("控制器")]
+    //[Header("控制器")]
     //public Match3Controller match3Controller;
-    public RhythmController rhythmController;
+    //public RhythmController rhythmController;
 
     //private Match3Difficulty _pendingDifficulty = Match3Difficulty.Medium;
 
@@ -36,28 +36,40 @@ public class PartTimeJobSceneController : MonoBehaviour
         ShowSelection();
         ApplyDifficultyLabel();
     }
-
+    
     void Update()
     {
-        if (Keyboard.current == null || !Keyboard.current.spaceKey.wasPressedThisFrame) return;
-        if (Input.GetKeyDown(KeyCode.Alpha1))
+        // 安全检查：如果键盘没连接，直接返回
+        if (Keyboard.current == null) return;
+
+        // 直接检测数字键按下
+        if (Keyboard.current.digit1Key.wasPressedThisFrame)
         {
-            //_pendingDifficulty = Match3Difficulty.Easy;
+            // _pendingDifficulty = Match3Difficulty.Easy;
             ApplyDifficultyLabel();
+            Debug.Log("难度切换: Easy");
         }
-        else if (Input.GetKeyDown(KeyCode.Alpha2))
+        else if (Keyboard.current.digit2Key.wasPressedThisFrame)
         {
-            //_pendingDifficulty = Match3Difficulty.Medium;
+            // _pendingDifficulty = Match3Difficulty.Medium;
             ApplyDifficultyLabel();
+            Debug.Log("难度切换: Medium");
         }
-        else if (Input.GetKeyDown(KeyCode.Alpha3))
+        else if (Keyboard.current.digit3Key.wasPressedThisFrame)
         {
-            //_pendingDifficulty = Match3Difficulty.Hard;
+            // _pendingDifficulty = Match3Difficulty.Hard;
             ApplyDifficultyLabel();
+            Debug.Log("难度切换: Hard");
+        }
+
+        // 如果你需要空格键作为“确认/开始”键，应该分开写，而不是嵌套：
+        if (Keyboard.current.spaceKey.wasPressedThisFrame)
+        {
+            Debug.Log("开始游戏 / 确认选择");
         }
     }
 
-    void OnEnable()
+void OnEnable()
     {
         EventBus.Subscribe(GameEvent.OnMatch3End, OnGameEnd);
         EventBus.Subscribe(GameEvent.OnRhythmEnd, OnGameEnd);
@@ -95,7 +107,7 @@ public class PartTimeJobSceneController : MonoBehaviour
         Debug.Log("[PartTimeJob] 选择: 远山民宿 (音游)");
         if (selectionPanel != null) selectionPanel.SetActive(false);
         if (rhythmPanel != null) rhythmPanel.SetActive(true);
-        if (rhythmController != null) rhythmController.StartGame();
+        //if (rhythmController != null) rhythmController.StartGame();
     }
 
     private void OnGameEnd()

@@ -278,10 +278,14 @@ public class M3_Board : MonoBehaviour
             // 播放碎裂特效
             p.transform.DOPunchRotation(new Vector3(0, 0, 90), 0.2f);
             p.transform.DOScale(0, 0.2f).OnComplete(() => Destroy(p.gameObject));
-            allPieces[x, y] = null; // 消除数据
-
             // 可选：障碍物消除加分
-            M3_GameManager.Instance.AddScore(50);
+            FX_Manager.Instance.PlayFlyEffect(
+                FX_Manager.Instance.dollarSprite,
+                allPieces[x, y].AnchoredPos,
+                M3_GameManager.Instance.GetRevenueUIPosition(),
+                ()=>M3_GameManager.Instance.AddScore(1)
+            );
+            allPieces[x, y] = null; // 消除数据
         }
     }
 
