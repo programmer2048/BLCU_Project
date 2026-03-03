@@ -1,9 +1,14 @@
 using UnityEngine;
 using System;
+using UnityEngine.InputSystem.LowLevel;
+using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public class M3_GameManager : MonoBehaviour
 {
     public static M3_GameManager Instance { get; private set; }
+
+    private string mainMenuSceneName = "01_MainUI";
 
     [Header("Game Settings")]
     public int maxHealth = 100;        // 初始耐心值
@@ -22,11 +27,13 @@ public class M3_GameManager : MonoBehaviour
     public event Action OnGameOver;
     // 新增：游戏开始事件（方便UI重置倒计时文本颜色等）
     public event Action OnGameStarted;
+    public event Action<bool> OnGamePaused;
 
     void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+        Time.timeScale = 1f;
     }
 
     // ★ 目前暂时在这里自动开始，以后可以把这行删掉，改由UI按钮调用 StartGame()
@@ -51,6 +58,11 @@ public class M3_GameManager : MonoBehaviour
                 EndGame();
             }
             */
+        }
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            if (state == M3_GameState.Playing) TogglePause(true);
+            else if (state == M3_GameState.Paused) TogglePause(false);
         }
     }
 
@@ -78,7 +90,33 @@ public class M3_GameManager : MonoBehaviour
 
         Debug.Log("Game Started!");
     }
-
+    public void TogglePause(bool isPaused)
+    {
+        if (state == M3_GameState.GameOver) return;
+        if (isPaused)
+        {
+            state = M3_GameState.Paused;
+            Time.timeScale = 0f; // 冻结游戏时间（TrayController 和 动画都会停）
+        }
+        else
+        {
+            state = M3_GameState.Playing;
+            Time.timeScale = 1f; // 恢复时间
+        }
+        OnGamePaused?.Invoke(isPaused);
+    }
+    public void RetryLevel()
+    {
+        Time.timeScale = 1f; // 必须恢复时间，否则新场景也是停的
+        addRevenue();
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+    public void ReturnToMenu()
+    {
+        Time.timeScale = 1f;
+        addRevenue();
+        SceneManager.LoadScene(mainMenuSceneName);
+    }
     public void AddScore(int amount)
     {
         if (state != M3_GameState.Playing) return;
@@ -114,13 +152,16 @@ public class M3_GameManager : MonoBehaviour
         OnGameOver?.Invoke();
         // 这里可以弹出结算面板，显示 currentLevelTime 作为通关时间
     }
-
-    // ★ 辅助方法：给UI获取格式化时间（比如 "01:23"）
     public string GetFormattedTime()
     {
         // 如果想显示“剩余时间”，用 levelDuration - currentLevelTime
         // 这里按你的要求，显示“正计时”
         TimeSpan timeSpan = TimeSpan.FromSeconds(currentLevelTime);
         return string.Format("{0:D2}:{1:D2}", timeSpan.Minutes, timeSpan.Seconds);
+    }
+
+    public void addRevenue() // 对旅费的增加逻辑
+    {
+        SaveManager.Instance.CurrentGameData.money += this.currentScore;
     }
 }

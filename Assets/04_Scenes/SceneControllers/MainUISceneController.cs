@@ -1,222 +1,130 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
+using System.Collections.Generic;
 using TMPro;
 
-/// <summary>
-/// ä¸»ç•Œé¢åœºæ™¯æ§åˆ¶å™¨ â€”â€” åœ°å›¾/å¯¼èˆª/æ—…è´¹æ˜¾ç¤º
-/// </summary>
-public class MainUISceneController : MonoBehaviour
+public class mainUISceneController : MonoBehaviour
 {
-    [Header("é¡¶éƒ¨çŠ¶æ€æ ")]
-    public TextMeshProUGUI currencyText;
-    public Button messageButton;
-    public GameObject messageUnreadDot;
+    [Header("--- ×ÊÔ´Õ¹Ê¾ ---")]
+    public TextMeshProUGUI moneyText;
 
-    [Header("åº•éƒ¨å¯¼èˆª")]
-    public Button workButton;
-    public Button albumButton;
+    [Header("--- ÕÂ½ÚÓëÅäÖÃ¿â ---")]
+    public List<ChapterSlot> chapterSlots;
+    public List<ChapterConfig> allChapterConfigs;
 
-    [Header("åœ°å›¾æ™¯ç‚¹æŒ‰é’®")]
-    public Button[] spotButtons;
-    public TextMeshProUGUI[] spotLabels;
-    public Image[] spotImages;
+    [Header("--- ½»»¥°´Å¥ ---")]
+    public Button workSystemButton;
+    public GameObject workPanel;
+    public Button btnRestaurant;
+    public Button btnGuesthouse;
+    public Button btnAlbum;
 
-    [Header("èŠå¤©é¢æ¿")]
-    public GameObject chatPanel;
-    public SocialUIController socialUI;
+    [Header("--- ³¡¾°Ãû³Æ ---")]
+    public string storySceneName = "04_StoryScenes";
+    private string restaurantSceneName = "02_PartTimeJobs";
+    private string guesthouseSceneName = "PhythmGame";
+    private string albumSceneName = "Album";
 
-    [Header("ç»“å±€æ£€æŸ¥")]
-    public Button endingButton;
+    private GameData currentData;
 
-    private bool _hasUnreadMessage = true;
+    [System.Serializable]
+    public class ChapterSlot
+    {
+        public int chapterId;
+        public Button button;
+        public GameObject lockIcon;      // Î´½âËøÍ¼±ê (Ëø)
+        public GameObject checkMarkIcon; // ÒÑÍê³ÉÍ¼±ê (´ò¹´)
+        public TextMeshProUGUI costText; // ÂÃ·ÑÎÄ±¾
+    }
 
     void Start()
     {
-        // å¯¼èˆªæŒ‰é’®
-        if (workButton != null)
-            workButton.onClick.AddListener(() => {
-                Debug.Log("[MainUI] ç‚¹å‡»æ‰“å·¥æŒ‰é’®");
-                if (GameFlowManager.Instance != null)
-                    GameFlowManager.Instance.GoToPartTimeJob();
-            });
+        if (SaveManager.Instance != null && SaveManager.Instance.CurrentGameData != null)
+            currentData = SaveManager.Instance.CurrentGameData;
+        else
+            currentData = new GameData("test_save");
 
-        if (albumButton != null)
-            albumButton.onClick.AddListener(() => {
-                Debug.Log("[MainUI] ç‚¹å‡»ç›¸ç°¿æŒ‰é’®");
-                if (GameFlowManager.Instance != null)
-                    GameFlowManager.Instance.GoToAlbum();
-            });
+        RefreshResourceUI();
+        RefreshChapterState();
 
-        if (messageButton != null)
-            messageButton.onClick.AddListener(() => {
-                Debug.Log("[MainUI] ç‚¹å‡»æ¶ˆæ¯æŒ‰é’®");
-                SetUnreadMessage(false);
-                if (GameFlowManager.Instance != null)
-                    GameFlowManager.Instance.GoToSocial();
-            });
+        if (workPanel != null) workPanel.SetActive(false);
+        BindButtonEvents();
+    }
 
-        // æ™¯ç‚¹æŒ‰é’®
-        for (int i = 0; i < 4; i++)
+    private void BindButtonEvents()
+    {
+        if (workSystemButton) workSystemButton.onClick.AddListener(() => workPanel.SetActive(!workPanel.activeSelf));
+        if (btnRestaurant) btnRestaurant.onClick.AddListener(() => LoadTargetScene(restaurantSceneName));
+        if (btnGuesthouse) btnGuesthouse.onClick.AddListener(() => LoadTargetScene(guesthouseSceneName));
+        if (btnAlbum) btnAlbum.onClick.AddListener(() => LoadTargetScene(albumSceneName));
+    }
+
+    public void RefreshResourceUI()
+    {
+        if (currentData == null) return;
+        if (moneyText != null) moneyText.text = currentData.money.ToString();
+    }
+
+    private void RefreshChapterState()
+    {
+        int playerProgress = currentData.currentChapter; // ¼ÙÉèĞÂµµÎª 1
+
+        foreach (var slot in chapterSlots)
         {
-            if (spotButtons != null && i < spotButtons.Length && spotButtons[i] != null)
+            ChapterConfig config = allChapterConfigs.Find(c => c.chapterId == slot.chapterId);
+            int cost = config != null ? config.unlockCost : 0;
+
+            slot.button.onClick.RemoveAllListeners();
+
+            // ×´Ì¬ 1£ºÎ´½âËø (ÕÂ½ÚºÅ > µ±Ç°½ø¶È)
+            if (slot.chapterId > playerProgress)
             {
-                int index = i;
-                spotButtons[i].onClick.AddListener(() => OnSpotClicked(index));
+                slot.button.interactable = false; // ÎŞÏìÓ¦
+                if (slot.lockIcon) slot.lockIcon.SetActive(true);
+                if (slot.checkMarkIcon) slot.checkMarkIcon.SetActive(false);
+                if (slot.costText) slot.costText.text = "Î´½âËø";
+            }
+            // ×´Ì¬ 2£ºµ±Ç°¿ÉÍæ (ÕÂ½ÚºÅ == µ±Ç°½ø¶È)
+            else if (slot.chapterId == playerProgress)
+            {
+                slot.button.interactable = true;
+                if (slot.lockIcon) slot.lockIcon.SetActive(false);
+                if (slot.checkMarkIcon) slot.checkMarkIcon.SetActive(false);
+                if (slot.costText) slot.costText.text = $"ÂÃ·Ñ: {cost}";
+
+                slot.button.onClick.AddListener(() => OnCurrentChapterClicked(cost));
+            }
+            // ×´Ì¬ 3£ºÒÑ¾­Íê³É (ÕÂ½ÚºÅ < µ±Ç°½ø¶È)
+            else
+            {
+                slot.button.interactable = true; // ÔÊĞíÃâ·Ñ»Ø¹Ë¾çÇé
+                if (slot.lockIcon) slot.lockIcon.SetActive(false);
+                if (slot.checkMarkIcon) slot.checkMarkIcon.SetActive(true); // ÏÔÊ¾´ò¹´
+                if (slot.costText) slot.costText.text = "ÒÑÍ¨¹Ø";
+
+                slot.button.onClick.AddListener(() => LoadTargetScene(storySceneName));
             }
         }
-
-        // ç»“å±€æŒ‰é’®ï¼ˆå½“æ‰€æœ‰æ™¯ç‚¹æ¢ç´¢å®Œæ¯•æ—¶æ˜¾ç¤ºï¼‰
-        if (endingButton != null)
-            endingButton.onClick.AddListener(() => {
-                if (GameFlowManager.Instance != null && GameManager.Instance != null && GameManager.Instance.AllSpotsExplored())
-                    GameFlowManager.Instance.GoToEnding();
-            });
-
-        if (chatPanel != null)
-            chatPanel.SetActive(false);
-
-        RefreshUI();
-        SetUnreadMessage(_hasUnreadMessage);
     }
 
-    void OnEnable()
+    private void OnCurrentChapterClicked(int cost)
     {
-        EventBus.Subscribe<int>(GameEvent.OnCurrencyChanged, OnCurrencyChanged);
-        EventBus.Subscribe<int>(GameEvent.OnSpotUnlocked, OnSpotUnlocked);
-        EventBus.Subscribe<int>(GameEvent.OnSpotExplored, OnSpotExplored);
-    }
-
-    void OnDisable()
-    {
-        EventBus.Unsubscribe<int>(GameEvent.OnCurrencyChanged, OnCurrencyChanged);
-        EventBus.Unsubscribe<int>(GameEvent.OnSpotUnlocked, OnSpotUnlocked);
-        EventBus.Unsubscribe<int>(GameEvent.OnSpotExplored, OnSpotExplored);
-    }
-
-    private void OnSpotUnlocked(int _)
-    {
-        RefreshSpots();
-        SetUnreadMessage(true);
-    }
-
-    private void OnSpotExplored(int _)
-    {
-        RefreshSpots();
-        SetUnreadMessage(true);
-    }
-
-    private void OnCurrencyChanged(int amount)
-    {
-        if (currencyText != null)
-            currencyText.text = $"æ—…è´¹: {amount}";
-    }
-
-    private void OnSpotClicked(int index)
-    {
-        if (GameManager.Instance == null) return;
-
-        if (GameManager.Instance.IsSpotExplored(index))
+        if (currentData.money >= cost)
         {
-            Debug.Log($"[MainUI] {GameManager.SpotNames[index]} å·²æ¢ç´¢å®Œæ¯•");
-            return;
-        }
-
-        if (GameManager.Instance.IsSpotUnlocked(index))
-        {
-            Debug.Log($"[MainUI] è¿›å…¥ {GameManager.SpotNames[index]} å‰§æƒ…");
-            if (GameFlowManager.Instance != null)
-            {
-                GameFlowManager.Instance.CurrentChapterIndex = index;
-                GameFlowManager.Instance.GoToStory();
-            }
-            return;
-        }
-
-        // æ£€æŸ¥å‰ä¸€ä¸ªæ™¯ç‚¹æ˜¯å¦å·²è§£é”ï¼ˆçº¿æ€§è§£é”ï¼‰
-        if (index > 0 && !GameManager.Instance.IsSpotUnlocked(index - 1))
-        {
-            Debug.Log($"[MainUI] éœ€è¦å…ˆè§£é” {GameManager.SpotNames[index - 1]}");
-            return;
-        }
-
-        bool success = GameManager.Instance.UnlockSpot(index);
-        if (success)
-        {
-            RefreshSpots();
-            // è§£é”åç«‹å³è¿›å…¥å‰§æƒ…
-            if (GameFlowManager.Instance != null)
-            {
-                GameFlowManager.Instance.CurrentChapterIndex = index;
-                GameFlowManager.Instance.GoToStory();
-            }
+            currentData.money -= cost;
+            SaveManager.Instance.SaveCurrentGame();
+            RefreshResourceUI();
+            LoadTargetScene(storySceneName);
         }
         else
         {
-            Debug.Log($"[MainUI] æ—…è´¹ä¸è¶³! éœ€è¦ {GameManager.SpotCosts[index]}");
+            Debug.LogWarning("ÂÃ·Ñ²»×ã£¡ÇëÏÈ´ò¹¤¡£");
         }
     }
 
-    public void RefreshUI()
+    private void LoadTargetScene(string sceneName)
     {
-        if (currencyText != null && GameManager.Instance != null)
-            currencyText.text = $"æ—…è´¹: {GameManager.Instance.TravelFee}";
-        RefreshSpots();
-        RefreshEndingButton();
-    }
-
-    private void RefreshSpots()
-    {
-        if (GameManager.Instance == null) return;
-
-        for (int i = 0; i < 4; i++)
-        {
-            bool unlocked = GameManager.Instance.IsSpotUnlocked(i);
-            bool explored = GameManager.Instance.IsSpotExplored(i);
-
-            if (spotLabels != null && i < spotLabels.Length && spotLabels[i] != null)
-            {
-                string status = explored ? " [å·²æ¢ç´¢]" : (unlocked ? " [å¯æ¢ç´¢]" : $" [é”]{GameManager.SpotCosts[i]}");
-                spotLabels[i].text = $"{GameManager.SpotNames[i]}{status}";
-            }
-
-            if (spotImages != null && i < spotImages.Length && spotImages[i] != null)
-            {
-                if (explored) spotImages[i].color = new Color(0.2f, 0.6f, 1f);
-                else if (unlocked) spotImages[i].color = new Color(0.2f, 0.8f, 0.2f);
-                else spotImages[i].color = Color.gray;
-            }
-        }
-
-        RefreshEndingButton();
-    }
-
-    private void RefreshEndingButton()
-    {
-        if (endingButton != null && GameManager.Instance != null)
-        {
-            endingButton.gameObject.SetActive(GameManager.Instance.AllSpotsExplored());
-        }
-    }
-
-    private void SetUnreadMessage(bool hasUnread)
-    {
-        _hasUnreadMessage = hasUnread;
-
-        if (messageUnreadDot == null && messageButton != null)
-        {
-            var dot = new GameObject("UnreadDot");
-            dot.transform.SetParent(messageButton.transform, false);
-            var rt = dot.AddComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0.78f, 0.72f);
-            rt.anchorMax = new Vector2(0.95f, 0.95f);
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-            var img = dot.AddComponent<Image>();
-            img.color = new Color(0.95f, 0.2f, 0.2f, 0.95f);
-            messageUnreadDot = dot;
-        }
-
-        if (messageUnreadDot != null)
-            messageUnreadDot.SetActive(_hasUnreadMessage);
+        SceneManager.LoadScene(sceneName);
     }
 }
