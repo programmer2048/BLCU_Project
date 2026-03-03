@@ -1,37 +1,50 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.Networking;
-using TMPro;
-using System.IO;
+using UnityEngine.InputSystem; // 必须引用
 using UnityEngine.InputSystem.Controls;
+using UnityEngine.SceneManagement; // 用于场景跳转
+using TMPro;
+using UnityEngine.UI; // 用于 Button
 
 public class RhythmGameManager : MonoBehaviour
 {
-    // ... (保留之前的 Header 和变量定义) ...
+    // ... (保留之前的 Header) ...
     [Header("资源设置")]
     public AudioSource musicSource;
     public AudioClip musicClip;
     public TextAsset jsonFile;
 
-    [Header("轨道配置")]
+    [Header("轨道设置")]
     public Transform[] laneContainers;
     public UIString[] strings;
     public UnityEngine.UI.Image[] laneTouchFeedbacks;
     public RectTransform hitLineReference;
 
-    [Header("UI & 反馈")]
+    [Header("UI & 特效")]
     public TextMeshProUGUI scoreText;
     public TextMeshProUGUI comboText;
     public RectTransform effectCanvasLayer;
 
+    // --- 新增：UI 面板与按钮 ---
+    [Header("UI Panels & Buttons")]
+    public GameObject pausePanel;
+    public GameObject gameOverPanel;
+    public TextMeshProUGUI finalScoreText; // 结算面板上的分显示
+    public Button resumeBtn;
+    public Button restartBtnPause;
+    public Button menuBtnPause;
+    public Button restartBtnOver;
+    public Button menuBtnOver;
+
+    [Header("Game Settings")]
     public float noteAppearDistance = 1200f;
+    public string mainMenuSceneName = "01_MainUI"; // 主菜单场景名
 
     [Header("预制体")]
     public GameObject tapNotePrefab;
     public GameObject holdNotePrefab;
-    public GameObject trapNotePrefab; // [新增] 陷阱预制体
+    public GameObject trapNotePrefab;
     public GameObject feedbackPrefab;
     public GameObject pulsePrefab;
     public GameObject phantomNotePrefab;
@@ -39,15 +52,22 @@ public class RhythmGameManager : MonoBehaviour
     // --- 内部变量 ---
     private int currentScore = 0;
     private int combo = 0;
-    private int scorePerPerfect = 100;
-    private int scorePerGood = 50;
+    private int scorePerPerfect = 2;
+    private int scorePerGood = 1;
     private List<ChartNote> allNotes = new List<ChartNote>();
     private List<NoteObject> activeNotes = new List<NoteObject>();
     private int nextNoteIndex = 0;
     private ChartJSON currentChart;
+
+    // 音频同步核心变量
     private double dspSongStartTime;
+    private double pauseBeginDspTime; // 记录暂停瞬间的时间
     private float secPerBeat;
+
     private bool isGameRunning = false;
+    private bool isPaused = false; // 暂停状态标记
+    private bool isGameOver = false; // 游戏结束标记
+
     private readonly float startDelay = 2.0f;
     public float songPosition { get; private set; }
     public float songPositionInBeats { get; private set; }
@@ -56,7 +76,25 @@ public class RhythmGameManager : MonoBehaviour
     private float perfectDist = 60f;
     private Coroutine comboAnimCoroutine;
 
-    void Start() { InitializeGame(); }
+    void Start()
+    {
+        InitializeGame();
+        BindButtons(); // 绑定按钮事件
+    }
+
+    // --- 新增：按钮绑定逻辑 ---
+    void BindButtons()
+    {
+        if (resumeBtn) resumeBtn.onClick.AddListener(() => TogglePause(false));
+        if (restartBtnPause) restartBtnPause.onClick.AddListener(RetryLevel);
+        if (menuBtnPause) menuBtnPause.onClick.AddListener(ReturnToMenu);
+
+        if (restartBtnOver) restartBtnOver.onClick.AddListener(RetryLevel);
+        if (menuBtnOver) menuBtnOver.onClick.AddListener(ReturnToMenu);
+
+        if (pausePanel) pausePanel.SetActive(false);
+        if (gameOverPanel) gameOverPanel.SetActive(false);
+    }
 
     public void InitializeGame()
     {
@@ -77,17 +115,23 @@ public class RhythmGameManager : MonoBehaviour
         else StartCoroutine(LoadResourcesFromDisk());
     }
 
-    // ... (LoadResourcesFromDisk, LoadAudioRoutine, OnReadyToPlay, StartGameplay 保持不变) ...
-    IEnumerator LoadResourcesFromDisk() { /*略，保持原样*/ yield break; }
-    IEnumerator LoadAudioRoutine(string f) { /*略，保持原样*/ yield break; }
+    // ... (LoadResources, LoadAudioRoutine 保持不变) ...
+    IEnumerator LoadResourcesFromDisk() { yield break; } // 省略具体实现
+    IEnumerator LoadAudioRoutine(string f) { yield break; } // 省略具体实现
+
     void OnReadyToPlay() { StartGameplay(); }
+
     public void StartGameplay()
     {
         double outputLatency = AudioSettings.GetConfiguration().dspBufferSize / (double)AudioSettings.outputSampleRate;
         dspSongStartTime = AudioSettings.dspTime + startDelay + outputLatency;
+
         musicSource.PlayScheduled(dspSongStartTime);
         isGameRunning = true;
+        isPaused = false;
+        isGameOver = false;
     }
+
     void ParseChartAndLoadAudio(string jsonText, bool loadAudio)
     {
         currentChart = JsonUtility.FromJson<ChartJSON>(jsonText);
@@ -102,50 +146,149 @@ public class RhythmGameManager : MonoBehaviour
 
     void Update()
     {
-        if (!isGameRunning) return;
+        // 如果游戏未开始，或者处于暂停/结束状态，不执行核心逻辑
+        if (!isGameRunning || isPaused || isGameOver)
+        {
+            HandlePauseInputOnly(); // 允许在暂停时检测 ESC 继续
+            return;
+        }
 
+        // 1. 计算当前歌曲位置
         songPosition = (float)(AudioSettings.dspTime - dspSongStartTime);
         songPositionInBeats = songPosition / secPerBeat;
 
+        // 2. 生成音符
         while (nextNoteIndex < allNotes.Count && allNotes[nextNoteIndex].beat < songPositionInBeats + 4.0f)
         {
             SpawnNoteObject(allNotes[nextNoteIndex]);
             nextNoteIndex++;
         }
 
+        // 3. 处理输入和音符状态
         HandleInput();
         UpdateActiveNotes();
+
+        // 4. 新增：检测游戏结束 (歌曲播放结束 且 列表无剩余音符)
+        CheckGameEnd();
     }
 
-    // --- [修改] 支持 Trap 生成 ---
+    // --- 新增：ESC 暂停检测 ---
+    void HandlePauseInputOnly()
+    {
+        if (isGameOver) return;
+        // 使用 New Input System 检测 ESC
+        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+        {
+            TogglePause(!isPaused);
+        }
+    }
+
+    // --- 新增：暂停逻辑 (包含音频同步修正) ---
+    public void TogglePause(bool pauseStatus)
+    {
+        if (isGameOver) return;
+
+        isPaused = pauseStatus;
+
+        if (isPaused)
+        {
+            // 暂停
+            Time.timeScale = 0f; // 停止 Update 中的动画 deltaTime
+            musicSource.Pause();
+            pauseBeginDspTime = AudioSettings.dspTime; // 记录暂停时刻
+
+            if (pausePanel) pausePanel.SetActive(true);
+        }
+        else
+        {
+            // 恢复
+            Time.timeScale = 1f;
+            musicSource.UnPause();
+
+            // 关键：计算暂停了多久，并将歌曲开始时间向后推，
+            // 否则 songPosition 会因为 dspTime 一直在走而瞬间跳跃。
+            double pauseDuration = AudioSettings.dspTime - pauseBeginDspTime;
+            dspSongStartTime += pauseDuration;
+
+            if (pausePanel) pausePanel.SetActive(false);
+        }
+    }
+
+    // --- 新增：游戏结束逻辑 ---
+    void CheckGameEnd()
+    {
+        // 如果音符都生成完了，且活动音符也都销毁了，且音乐播完了 (或超时)
+        bool noMoreNotes = nextNoteIndex >= allNotes.Count && activeNotes.Count == 0;
+        bool musicFinished = !musicSource.isPlaying && songPosition > 1f; // songPosition > 1f 防止刚开始没播放就被判定结束
+
+        if (noMoreNotes || (musicFinished && noMoreNotes))
+        {
+            // 稍微延迟一下显示结算，体验更好
+            StartCoroutine(GameOverRoutine());
+        }
+    }
+
+    IEnumerator GameOverRoutine()
+    {
+        isGameOver = true;
+        yield return new WaitForSeconds(1.0f); // 等待最后特效播完
+
+        Debug.Log("Game Completed!");
+        if (gameOverPanel) gameOverPanel.SetActive(true);
+        if (finalScoreText) finalScoreText.text = $"最终得分: {currentScore}";
+
+        // --- 核心：修改存档数据 ---
+        AddRevenueToSave();
+    }
+
+    void AddRevenueToSave()
+    {
+        // 假设规则：得分的 10% 转化为金钱
+        int moneyEarned = Mathf.FloorToInt(currentScore * 0.1f);
+
+        // 增加金钱 (引用 SaveManager)
+        if (SaveManager.Instance != null)
+        {
+            SaveManager.Instance.CurrentGameData.money += moneyEarned;
+            // 如果 SaveManager 需要手动保存，请调用 SaveManager.Instance.Save();
+            Debug.Log($"旅费增加: {moneyEarned}");
+        }
+        else
+        {
+            Debug.LogWarning("SaveManager Instance not found!");
+        }
+    }
+
+    // --- 新增：场景跳转逻辑 ---
+    public void RetryLevel()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    public void ReturnToMenu()
+    {
+        Time.timeScale = 1f;
+        // 如果中途退出也要加钱，可以在这里调用 AddRevenueToSave()，通常中途退出不给钱
+        SceneManager.LoadScene(mainMenuSceneName);
+    }
+
+    // ... (SpawnNoteObject, UpdateActiveNotes 保持不变) ...
     void SpawnNoteObject(ChartNote data)
     {
         if (data.lane < 0 || data.lane >= laneContainers.Length) return;
-
         GameObject prefab = tapNotePrefab;
         R_NoteType type = R_NoteType.Tap;
-
-        if (data.type == "hold")
-        {
-            prefab = holdNotePrefab;
-            type = R_NoteType.Hold;
-        }
-        else if (data.type == "trap") // [新增] 陷阱逻辑
-        {
-            prefab = trapNotePrefab;
-            type = R_NoteType.Trap;
-        }
+        if (data.type == "hold") { prefab = holdNotePrefab; type = R_NoteType.Hold; }
+        else if (data.type == "trap") { prefab = trapNotePrefab; type = R_NoteType.Trap; }
 
         if (prefab == null) return;
-
         GameObject obj = Instantiate(prefab, laneContainers[data.lane]);
         NoteObject note = obj.GetComponent<NoteObject>();
-
         note.Init(this, data.beat, data.lane, type, data.duration, hitLineY);
         activeNotes.Add(note);
     }
 
-    // --- [修改] 陷阱不做 Miss 处理 ---
     void UpdateActiveNotes()
     {
         for (int i = activeNotes.Count - 1; i >= 0; i--)
@@ -154,12 +297,10 @@ public class RhythmGameManager : MonoBehaviour
             if (note == null) { activeNotes.RemoveAt(i); continue; }
             float distToLine = (note.targetBeat - songPositionInBeats) * pixelsPerBeat;
 
-            // 越过判定线
             if (distToLine < -perfectDist - 20f)
             {
                 if (note.type == R_NoteType.Trap)
                 {
-                    // [新增] 陷阱如果漏过去了，是好事，直接销毁，不中断连击
                     RemoveActiveNote(note);
                     Destroy(note.gameObject);
                 }
@@ -175,44 +316,39 @@ public class RhythmGameManager : MonoBehaviour
     void HandleInput()
     {
         if (Keyboard.current == null) return;
-        CheckLaneInput(0, Keyboard.current.dKey);
-        CheckLaneInput(1, Keyboard.current.fKey);
-        CheckLaneInput(2, Keyboard.current.jKey);
-        CheckLaneInput(3, Keyboard.current.kKey);
-        CheckLaneInput(4, Keyboard.current.lKey);
+
+        // 只有游戏运行时才响应轨道输入
+        if (!isPaused && !isGameOver)
+        {
+            CheckLaneInput(0, Keyboard.current.dKey);
+            CheckLaneInput(1, Keyboard.current.fKey);
+            CheckLaneInput(2, Keyboard.current.jKey);
+            CheckLaneInput(3, Keyboard.current.kKey);
+            CheckLaneInput(4, Keyboard.current.lKey);
+        }
+
+        // Update 中已经单独处理了 HandlePauseInputOnly 用于检测 ESC
+        HandlePauseInputOnly();
     }
+
+    // ... (CheckLaneInput, TriggerLaneVisuals, FadeOutLaneVisuals, OnNoteHit, OnTrapHit, OnNoteMiss, OnHoldComplete 保持不变) ...
 
     void CheckLaneInput(int lane, KeyControl key)
     {
-        // --- 按下逻辑 ---
         if (key.wasPressedThisFrame)
         {
             TriggerLaneVisuals(lane);
             NoteObject target = GetClosestHittableNote(lane);
-
             if (target != null)
             {
                 float currentDist = Mathf.Abs((target.targetBeat - songPositionInBeats) * pixelsPerBeat);
-
-                // 判定范围内
                 if (currentDist <= perfectDist * 2.5f)
                 {
-                    // [新增] 陷阱判定：如果按到了陷阱，触发惩罚
-                    if (target.type == R_NoteType.Trap)
-                    {
-                        OnTrapHit(target);
-                    }
-                    else
-                    {
-                        // 普通音符判定
-                        bool isPerfect = currentDist <= perfectDist * 1.2f;
-                        OnNoteHit(target, isPerfect);
-                    }
+                    if (target.type == R_NoteType.Trap) OnTrapHit(target);
+                    else OnNoteHit(target, currentDist <= perfectDist * 1.2f);
                 }
             }
         }
-
-        // --- [修改] 松手逻辑：恢复严格判定 ---
         if (key.wasReleasedThisFrame)
         {
             FadeOutLaneVisuals(lane);
@@ -222,48 +358,25 @@ public class RhythmGameManager : MonoBehaviour
                 if (note.laneIndex == lane && note.type == R_NoteType.Hold && note.isHolding)
                 {
                     float endBeat = note.targetBeat + note.holdDuration;
-                    float diff = Mathf.Abs(songPositionInBeats - endBeat);
-
-                    // [恢复] 严格的判定
-                    // 必须在结束时间点附近松手 (误差 < 0.15拍) 且 不能提前太多
-                    // 如果当前时间已经超过结束时间太久，通常会自动完成或者Miss，这里处理的是玩家主动松手
-
-                    if (songPositionInBeats < endBeat - 0.15f)
-                    {
-                        // 松手太早 (未到结束点)
-                        OnNoteMiss(note);
-                    }
-                    else
-                    {
-                        // 在结束点附近松手，完美
-                        OnHoldComplete(note);
-                    }
+                    if (songPositionInBeats < endBeat - 0.15f) OnNoteMiss(note);
+                    else OnHoldComplete(note);
                 }
             }
         }
     }
 
-    // --- 视觉反馈 ---
-
     void TriggerLaneVisuals(int lane)
     {
         float pluckRatio = (lane * 2 + 1) / 10f;
-        if (lane < strings.Length && strings[lane])
-            strings[lane].Pluck(pluckRatio, 800f);
-
-        if (lane < laneTouchFeedbacks.Length && laneTouchFeedbacks[lane])
-            laneTouchFeedbacks[lane].canvasRenderer.SetAlpha(0.6f);
-
+        if (lane < strings.Length && strings[lane]) strings[lane].Pluck(pluckRatio, 800f);
+        if (lane < laneTouchFeedbacks.Length && laneTouchFeedbacks[lane]) laneTouchFeedbacks[lane].canvasRenderer.SetAlpha(0.6f);
         SpawnPulseEffect(lane);
         SpawnPhantomNote(lane);
     }
-
     void FadeOutLaneVisuals(int lane)
     {
-        if (lane < laneTouchFeedbacks.Length && laneTouchFeedbacks[lane])
-            laneTouchFeedbacks[lane].CrossFadeAlpha(0f, 0.2f, false);
+        if (lane < laneTouchFeedbacks.Length && laneTouchFeedbacks[lane]) laneTouchFeedbacks[lane].CrossFadeAlpha(0f, 0.2f, false);
     }
-
     void OnNoteHit(NoteObject note, bool isPerfect)
     {
         combo++;
@@ -272,7 +385,7 @@ public class RhythmGameManager : MonoBehaviour
         {
             note.TriggerHit();
             int score = isPerfect ? scorePerPerfect : scorePerGood;
-            string text = isPerfect ? "妙" : "佳";
+            string text = isPerfect ? "完美" : "不错";
             Color col = isPerfect ? new Color(1f, 0.8f, 0.2f) : Color.cyan;
             ShowFeedback(text, col, GetLaneWorldPos(note.laneIndex));
             AddScore(score);
@@ -284,51 +397,39 @@ public class RhythmGameManager : MonoBehaviour
             AddScore(scorePerGood);
         }
     }
-
-    // [新增] 陷阱命中逻辑
     void OnTrapHit(NoteObject note)
     {
-        combo = 0; // 断连
+        combo = 0;
         UpdateComboUI();
-
-        // 显示红色警告
-        ShowFeedback("陷", Color.red, GetLaneWorldPos(note.laneIndex));
-
-        // 可选：扣分
+        ShowFeedback("受伤", Color.red, GetLaneWorldPos(note.laneIndex));
         AddScore(-50);
-
-        note.TriggerHit(); // 播放消失动画
+        note.TriggerHit();
         RemoveActiveNote(note);
     }
-
     public void OnNoteMiss(NoteObject note)
     {
         combo = 0;
         UpdateComboUI();
         Vector3 pos = note != null ? note.rectTrans.position : GetLaneWorldPos(note.laneIndex);
-        ShowFeedback("漏", Color.gray, pos);
+        ShowFeedback("错过", Color.gray, pos);
         RemoveActiveNote(note);
         if (note != null) Destroy(note.gameObject);
     }
-
     public void OnHoldComplete(NoteObject note)
     {
         combo++;
         UpdateComboUI();
-        Vector3 endPos = GetLaneWorldPos(note.laneIndex);
-        // "绝" 的反馈
-        ShowFeedback("绝", new Color(1f, 0.9f, 0.3f), endPos);
+        ShowFeedback("完美", new Color(1f, 0.9f, 0.3f), GetLaneWorldPos(note.laneIndex));
         AddScore(scorePerPerfect);
         RemoveActiveNote(note);
         if (note != null) Destroy(note.gameObject);
     }
 
-    // ... (AddScore, UpdateScoreUI, UpdateComboUI, AnimateComboText 保持不变) ...
+    // ... (AddScore, UpdateScoreUI, UpdateComboUI, AnimateComboText, ShowFeedback, SpawnPhantomNote, Helper Methods 保持不变) ...
     void AddScore(int val) { currentScore += val; UpdateScoreUI(); }
-    void UpdateScoreUI() { if (scoreText) scoreText.text = $"旅费: {currentScore}"; }
-    void UpdateComboUI() { if (comboText) { if (combo > 1) { comboText.text = $"{combo} 连"; comboText.gameObject.SetActive(true); if (comboAnimCoroutine != null) StopCoroutine(comboAnimCoroutine); comboAnimCoroutine = StartCoroutine(AnimateComboText()); } else comboText.gameObject.SetActive(false); } }
+    void UpdateScoreUI() { if (scoreText) scoreText.text = $"得分: {currentScore}"; }
+    void UpdateComboUI() { if (comboText) { if (combo > 1) { comboText.text = $"{combo} 连击"; comboText.gameObject.SetActive(true); if (comboAnimCoroutine != null) StopCoroutine(comboAnimCoroutine); comboAnimCoroutine = StartCoroutine(AnimateComboText()); } else comboText.gameObject.SetActive(false); } }
     IEnumerator AnimateComboText() { float timer = 0f; float duration = 0.1f; Vector3 startScale = Vector3.one * 1.5f; Vector3 endScale = Vector3.one; while (timer < duration) { timer += Time.deltaTime; if (comboText) comboText.transform.localScale = Vector3.Lerp(startScale, endScale, timer / duration); yield return null; } if (comboText) comboText.transform.localScale = endScale; }
-
     void ShowFeedback(string text, Color col, Vector3 worldPos)
     {
         if (!feedbackPrefab || !effectCanvasLayer) return;
@@ -345,79 +446,38 @@ public class RhythmGameManager : MonoBehaviour
         FeedbackEffect script = obj.GetComponent<FeedbackEffect>();
         if (script) script.Setup(text, col);
     }
-
-    // --- [重点修改] 精确计算分位点生成 PhantomNote ---
     void SpawnPhantomNote(int lane)
     {
         if (!phantomNotePrefab || !effectCanvasLayer) return;
-
-        // 1. 获取对应的弦
         RectTransform stringRect = null;
-        if (lane < strings.Length && strings[lane] != null)
-        {
-            stringRect = strings[lane].GetComponent<RectTransform>();
-        }
-
+        if (lane < strings.Length && strings[lane] != null) stringRect = strings[lane].GetComponent<RectTransform>();
         Vector3 targetWorldPos;
-
         if (stringRect != null)
         {
-            // [核心算法]：获取弦的世界角点，进行线性插值
-            // Pluck 的逻辑是 (lane * 2 + 1) / 10f
-            // 假设 strings[lane] 代表该轨道的弦对象
             float ratio = (lane * 2 + 1) / 10f;
-
-            // 获取四个角点：0=左下, 1=左上, 2=右上, 3=右下
             Vector3[] corners = new Vector3[4];
             stringRect.GetWorldCorners(corners);
-
-            // 计算左边缘的中心点和右边缘的中心点
             Vector3 leftCenter = (corners[0] + corners[1]) * 0.5f;
             Vector3 rightCenter = (corners[3] + corners[2]) * 0.5f;
-
-            // 在左右之间根据 ratio 进行插值
-            // 这样无论弦是横着放、竖着放还是斜着放，点都在弦上对应的比例位置
             targetWorldPos = Vector3.Lerp(leftCenter, rightCenter, ratio);
         }
-        else
-        {
-            // 备用方案：没有弦对象时，使用轨道位置
-            targetWorldPos = GetLaneWorldPos(lane);
-            targetWorldPos.y -= 300f;
-        }
-
+        else { targetWorldPos = GetLaneWorldPos(lane); targetWorldPos.y -= 300f; }
         GameObject obj = Instantiate(phantomNotePrefab, effectCanvasLayer);
         Canvas canvas = effectCanvasLayer.GetComponentInParent<Canvas>();
         Camera uiCamera = canvas.worldCamera != null ? canvas.worldCamera : Camera.main;
-
-        // 2. 坐标转换
         Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(uiCamera, targetWorldPos);
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            effectCanvasLayer,
-            screenPoint,
-            uiCamera,
-            out Vector2 localPoint
-        );
-
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(effectCanvasLayer, screenPoint, uiCamera, out Vector2 localPoint);
         RectTransform rt = obj.GetComponent<RectTransform>();
         rt.anchoredPosition = localPoint;
         rt.localPosition = new Vector3(rt.localPosition.x, rt.localPosition.y, 0);
         rt.localScale = Vector3.one;
         rt.localRotation = Quaternion.identity;
-
         PhantomNote script = obj.GetComponent<PhantomNote>();
         string[] scaleChars = { "宫", "商", "角", "徵", "羽" };
-        Color[] smokeColors = {
-            new Color(1f, 0.4f, 0.4f),
-            new Color(1f, 0.8f, 0.2f),
-            new Color(0.4f, 1f, 0.4f),
-            new Color(0.2f, 0.8f, 1f),
-            new Color(0.8f, 0.4f, 1f)
-        };
+        Color[] smokeColors = { new Color(1f, 0.4f, 0.4f), new Color(1f, 0.8f, 0.2f), new Color(0.4f, 1f, 0.4f), new Color(0.2f, 0.8f, 1f), new Color(0.8f, 0.4f, 1f) };
         int idx = lane % 5;
         if (script) script.Setup(scaleChars[idx], smokeColors[idx]);
     }
-
     Vector3 GetLaneWorldPos(int lane)
     {
         if (lane >= 0 && lane < laneContainers.Length)
@@ -428,14 +488,11 @@ public class RhythmGameManager : MonoBehaviour
         }
         return Vector3.zero;
     }
-
     NoteObject GetClosestHittableNote(int lane)
     {
         NoteObject c = null; float min = float.MaxValue;
         foreach (var n in activeNotes)
         {
-            // 排除已经打过的，排除正在长按的(按下的瞬间)，
-            // 如果是 Trap，也在检查范围内
             if (n.laneIndex == lane && !n.isHit && !n.isHolding)
             {
                 float d = Mathf.Abs((n.targetBeat - songPositionInBeats) * pixelsPerBeat);

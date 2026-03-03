@@ -9,11 +9,11 @@ public class mainUISceneController : MonoBehaviour
     [Header("--- 资源展示 ---")]
     public TextMeshProUGUI moneyText;
 
-    [Header("--- 章节与配置库 ---")]
+    [Header("--- 章节选择控制 ---")]
     public List<ChapterSlot> chapterSlots;
     public List<ChapterConfig> allChapterConfigs;
 
-    [Header("--- 交互按钮 ---")]
+    [Header("--- 功能按钮 ---")]
     public Button workSystemButton;
     public GameObject workPanel;
     public Button btnRestaurant;
@@ -23,7 +23,7 @@ public class mainUISceneController : MonoBehaviour
     [Header("--- 场景名称 ---")]
     public string storySceneName = "04_StoryScenes";
     private string restaurantSceneName = "02_PartTimeJobs";
-    private string guesthouseSceneName = "PhythmGame";
+    private string guesthouseSceneName = "RhythmGame";
     private string albumSceneName = "Album";
 
     private GameData currentData;
@@ -34,8 +34,8 @@ public class mainUISceneController : MonoBehaviour
         public int chapterId;
         public Button button;
         public GameObject lockIcon;      // 未解锁图标 (锁)
-        public GameObject checkMarkIcon; // 已完成图标 (打勾)
-        public TextMeshProUGUI costText; // 旅费文本
+        public GameObject checkMarkIcon; // 已完成图标 (勾)
+        public TextMeshProUGUI costText; // 费用文本
     }
 
     void Start()
@@ -44,6 +44,8 @@ public class mainUISceneController : MonoBehaviour
             currentData = SaveManager.Instance.CurrentGameData;
         else
             currentData = new GameData("test_save");
+
+        SaveManager.Instance.SaveCurrentGame();
 
         RefreshResourceUI();
         RefreshChapterState();
@@ -68,59 +70,78 @@ public class mainUISceneController : MonoBehaviour
 
     private void RefreshChapterState()
     {
-        int playerProgress = currentData.currentChapter; // 假设新档为 1
+        int playerProgress = currentData.currentChapter;
 
         foreach (var slot in chapterSlots)
         {
             ChapterConfig config = allChapterConfigs.Find(c => c.chapterId == slot.chapterId);
             int cost = config != null ? config.unlockCost : 0;
 
+            // 这是一个临时变量，用于闭包，防止点击事件里的ID出错
+            int targetId = slot.chapterId;
+
             slot.button.onClick.RemoveAllListeners();
 
             // 状态 1：未解锁 (章节号 > 当前进度)
             if (slot.chapterId > playerProgress)
             {
-                slot.button.interactable = false; // 无响应
+                slot.button.interactable = false;
                 if (slot.lockIcon) slot.lockIcon.SetActive(true);
                 if (slot.checkMarkIcon) slot.checkMarkIcon.SetActive(false);
                 if (slot.costText) slot.costText.text = "未解锁";
             }
-            // 状态 2：当前可玩 (章节号 == 当前进度)
+            // 状态 2：当前进度 (章节号 == 当前进度)
             else if (slot.chapterId == playerProgress)
             {
                 slot.button.interactable = true;
                 if (slot.lockIcon) slot.lockIcon.SetActive(false);
                 if (slot.checkMarkIcon) slot.checkMarkIcon.SetActive(false);
-                if (slot.costText) slot.costText.text = $"旅费: {cost}";
+                if (slot.costText) slot.costText.text = $"费用: {cost}";
 
-                slot.button.onClick.AddListener(() => OnCurrentChapterClicked(cost));
+                // 【修改点】传入 targetId
+                slot.button.onClick.AddListener(() => OnCurrentChapterClicked(cost, targetId));
             }
-            // 状态 3：已经完成 (章节号 < 当前进度)
+            // 状态 3：已通过 (章节号 < 当前进度)
             else
             {
-                slot.button.interactable = true; // 允许免费回顾剧情
+                slot.button.interactable = true;
                 if (slot.lockIcon) slot.lockIcon.SetActive(false);
-                if (slot.checkMarkIcon) slot.checkMarkIcon.SetActive(true); // 显示打勾
-                if (slot.costText) slot.costText.text = "已通关";
+                if (slot.checkMarkIcon) slot.checkMarkIcon.SetActive(true);
+                if (slot.costText) slot.costText.text = "重玩"; // 提示文字改为重玩
 
-                slot.button.onClick.AddListener(() => LoadTargetScene(storySceneName));
+                // 【修改点】调用专门的回顾方法，传入 targetId
+                slot.button.onClick.AddListener(() => OnReplayChapterClicked(targetId));
             }
         }
     }
 
-    private void OnCurrentChapterClicked(int cost)
+    // 处理当前新章节的点击（扣钱 + 记录ID + 跳转）
+    private void OnCurrentChapterClicked(int cost, int chapterId)
     {
         if (currentData.money >= cost)
         {
             currentData.money -= cost;
             SaveManager.Instance.SaveCurrentGame();
             RefreshResourceUI();
+
+            // 【关键】记录玩家选择的章节ID，告诉下一个场景该播哪个剧情
+            PlayerPrefs.SetInt("SelectedChapterId", chapterId);
+
             LoadTargetScene(storySceneName);
         }
         else
         {
-            Debug.LogWarning("旅费不足！请先打工。");
+            Debug.LogWarning("旅费不足，请先打工！");
         }
+    }
+
+    // 处理旧章节的点击（不扣钱 + 记录ID + 跳转）
+    private void OnReplayChapterClicked(int chapterId)
+    {
+        // 【关键】记录玩家选择的章节ID
+        PlayerPrefs.SetInt("SelectedChapterId", chapterId);
+
+        LoadTargetScene(storySceneName);
     }
 
     private void LoadTargetScene(string sceneName)

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class AlbumController : MonoBehaviour
 {
@@ -26,6 +27,11 @@ public class AlbumController : MonoBehaviour
 
         // 3. 刷新信物的显示状态
         RefreshItemsUnlockState();
+    }
+
+    public void Exit()
+    {
+        SceneManager.LoadScene("01_MainUI");
     }
 
     /// <summary>

@@ -49,7 +49,7 @@ public class NoteObject : MonoBehaviour
         // —’…´÷ÿ÷√
         if (noteImage)
         {
-            noteImage.color = Color.white;
+            //noteImage.color = Color.white;
             noteImage.canvasRenderer.SetAlpha(1f);
         }
 

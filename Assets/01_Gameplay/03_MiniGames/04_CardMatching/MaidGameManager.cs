@@ -178,20 +178,15 @@ public class MaidGameManager : MonoBehaviour
 
     public void FinishLevelAndExit()
     {   // 1. 更新存档：当前章节变成“下一章”
-        // 1. 更新存档：当前章节变成“下一章”ce != null && SaveManager.Instance.CurrentGameData != null)
         if (SaveManager.Instance != null && SaveManager.Instance.CurrentGameData != null)
         {   // 防止重复玩旧章节导致进度倒退 (可选)
-            // 防止重复玩旧章节导致进度倒退 (可选)ce.CurrentGameData.currentChapter <= thisChapterId)
             if (SaveManager.Instance.CurrentGameData.currentChapter <= thisChapterId)
             {
                 SaveManager.Instance.CurrentGameData.currentChapter = nextChapterId;
-                SaveManager.Instance.CurrentGameData.currentChapter = nextChapterId;
+                SaveManager.Instance.CurrentGameData.chapterSubState = 0;
             }
             // 2. 保存到硬盘
-            // 2. 保存到硬盘.Instance.SaveCurrentGame();
             SaveManager.Instance.SaveCurrentGame();
-            // 3. 返回主菜单
-            // 3. 返回主菜单r.LoadScene("01_MainUI");
             SceneManager.LoadScene("01_MainUI");
         }
     }

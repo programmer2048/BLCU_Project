@@ -34,6 +34,11 @@ public class M3_GameManager : MonoBehaviour
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
         Time.timeScale = 1f;
+
+        // 强制开启日志
+        Debug.unityLogger.logEnabled = true;
+        // 确保过滤器不过滤任何类型
+        Debug.unityLogger.filterLogType = LogType.Log;
     }
 
     // ★ 目前暂时在这里自动开始，以后可以把这行删掉，改由UI按钮调用 StartGame()
@@ -59,8 +64,9 @@ public class M3_GameManager : MonoBehaviour
             }
             */
         }
-        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+        if (Keyboard.current != null && (Keyboard.current.escapeKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame))
         {
+            Debug.Log("ESC");
             if (state == M3_GameState.Playing) TogglePause(true);
             else if (state == M3_GameState.Paused) TogglePause(false);
         }

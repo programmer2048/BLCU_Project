@@ -13,19 +13,19 @@ public class StoryManager : MonoBehaviour
     public List<ChapterConfig> allChapters;
     private ChapterConfig currentConfig; // 当前正在播放的章节配置
 
-    [Header("--- UI 引用 ---")]
+    [Header("--- UI 组件 ---")]
     public GameObject dialogPanel;
     public TextMeshProUGUI nameText;
     public TextMeshProUGUI dialogText;
     public Image leftCharacter;
     public Image rightCharacter;
 
-    [Header("--- 选项 UI 引用 ---")]
+    [Header("--- 选项 UI 组件 ---")]
     public GameObject choicePanel;
     public GameObject choiceButtonPrefab;
     public Transform choiceButtonContainer;
 
-    [Header("--- 视频 UI 引用 ---")]
+    [Header("--- 视频 UI 组件 ---")]
     public GameObject videoPanel;
     public VideoPlayer videoPlayer;
 
@@ -34,25 +34,50 @@ public class StoryManager : MonoBehaviour
     private bool isTyping = false;
     private string currentFullText = "";
 
+    // --- 新增：判断是否为回顾模式 ---
+    private bool isReplayMode = false;
+
     void Start()
     {
-        // 1. 初始化UI隐藏
+        // 1. 初始化UI状态
         dialogPanel.SetActive(false);
         choicePanel.SetActive(false);
         videoPanel.SetActive(false);
         tempAffection = 0;
-        // 2. 读取存档，找到应该播哪一章
-        int currentChapterId = SaveManager.Instance.CurrentGameData.currentChapter;
-        currentConfig = allChapters.Find(c => c.chapterId == currentChapterId);
-        // 【修改点 1】：加入安全判断
+
+        // 2. 获取目标章节 ID
+        // 读取存档中的实际进度
+        int savedProgress = SaveManager.Instance.CurrentGameData.currentChapter;
+
+        // 读取主菜单传递过来的目标章节 ID (如果没有传递，默认使用存档进度)
+        int selectedChapterId = PlayerPrefs.GetInt("SelectedChapterId", savedProgress);
+
+        // 关键逻辑：如果选择的章节 < 存档的进度，说明是在回顾旧剧情
+        // 如果选择的章节 == 存档进度，说明是推进新剧情
+        if (selectedChapterId < savedProgress)
+        {
+            isReplayMode = true;
+            Debug.Log($"当前处于回顾模式 (Replay)，不会保存进度和好感度。ID: {selectedChapterId}");
+        }
+        else
+        {
+            isReplayMode = false;
+        }
+
+        // 用完之后清除 Key，防止逻辑污染
+        PlayerPrefs.DeleteKey("SelectedChapterId");
+
+        // 3. 查找配置
+        currentConfig = allChapters.Find(c => c.chapterId == selectedChapterId);
+
         if (currentConfig == null || currentConfig.storyNodes == null || currentConfig.storyNodes.Count == 0)
         {
-            Debug.LogError($"找不到第 {currentChapterId} 章的配置，或者该章节 StoryNodes 为空！直接返回主页。");
-            // 直接加载主页，不走正常的结算流程
-            SceneManager.LoadScene("MainUIScene");
+            Debug.LogError($"找不到章节 {selectedChapterId} 的配置，或内容为空！直接返回主菜单。");
+            SceneManager.LoadScene("01_MainUI");
             return;
         }
-        // 3. 开始播放
+
+        // 4. 开始播放
         currentNodeIndex = 0;
         PlayCurrentNode();
     }
@@ -63,7 +88,7 @@ public class StoryManager : MonoBehaviour
 
         if (currentConfig.storyNodes[currentNodeIndex].nodeType == StoryNodeType.Dialog)
         {
-            // 使用新版 Input System 检测鼠标左键或空格键按下
+            // 使用 Input System 检测点击或空格
             bool isSkipPressed = false;
 
             if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
@@ -76,12 +101,14 @@ public class StoryManager : MonoBehaviour
             {
                 if (isTyping)
                 {
+                    // 如果正在打字，瞬间显示全本
                     StopAllCoroutines();
                     dialogText.text = currentFullText;
                     isTyping = false;
                 }
                 else
                 {
+                    // 如果已经显示完了，进入下一句
                     NextNode();
                 }
             }
@@ -94,7 +121,7 @@ public class StoryManager : MonoBehaviour
         if (currentNodeIndex < currentConfig.storyNodes.Count)
             PlayCurrentNode();
         else
-            EndStorySegment(); // 剧情部分播完了
+            EndStorySegment(); // 剧情部分结束
     }
 
     private void PlayCurrentNode()
@@ -118,17 +145,10 @@ public class StoryManager : MonoBehaviour
         }
     }
 
-    // --- 具体播放逻辑 (与之前基本一致) ---
+    // ... (PlayVideo, OnVideoEnd, PlayDialog, TypeText 保持不变) ...
     private void PlayVideo(VideoClip clip)
     {
-        // 【防呆设计】如果视频为空（开头结尾预留但暂无资源），直接跳过
-        if (clip == null)
-        {
-            Debug.LogWarning("未配置视频资源，自动跳过该节点。");
-            NextNode();
-            return;
-        }
-
+        if (clip == null) { NextNode(); return; }
         dialogPanel.SetActive(false);
         choicePanel.SetActive(false);
         videoPanel.SetActive(true);
@@ -136,14 +156,12 @@ public class StoryManager : MonoBehaviour
         videoPlayer.Play();
         videoPlayer.loopPointReached += OnVideoEnd;
     }
-
     private void OnVideoEnd(VideoPlayer vp)
     {
         vp.loopPointReached -= OnVideoEnd;
         videoPanel.SetActive(false);
         NextNode();
     }
-
     private void PlayDialog(StoryNode node)
     {
         videoPanel.SetActive(false);
@@ -151,40 +169,17 @@ public class StoryManager : MonoBehaviour
         dialogPanel.SetActive(true);
         nameText.text = node.speakerName;
         currentFullText = node.dialogText;
-        // --- 处理左侧立绘 ---
-        if (node.leftSprite != null)
-        {
-            leftCharacter.sprite = node.leftSprite;
-            leftCharacter.gameObject.SetActive(true); // 开启显示
-            leftCharacter.color = Color.white;        // 恢复正常颜色，不再使用变灰效果
-        }
-        else
-        {
-            leftCharacter.gameObject.SetActive(false); // 如果没配图（None），直接隐藏不绘制
-        }
-        // --- 处理右侧立绘 ---
-        if (node.rightSprite != null)
-        {
-            rightCharacter.sprite = node.rightSprite;
-            rightCharacter.gameObject.SetActive(true); // 开启显示
-            rightCharacter.color = Color.white;        // 恢复正常颜色，不再使用变灰效果
-        }
-        else
-        {
-            rightCharacter.gameObject.SetActive(false); // 如果没配图（None），直接隐藏不绘制
-        }
+        if (node.leftSprite != null) { leftCharacter.sprite = node.leftSprite; leftCharacter.gameObject.SetActive(true); leftCharacter.color = Color.white; }
+        else { leftCharacter.gameObject.SetActive(false); }
+        if (node.rightSprite != null) { rightCharacter.sprite = node.rightSprite; rightCharacter.gameObject.SetActive(true); rightCharacter.color = Color.white; }
+        else { rightCharacter.gameObject.SetActive(false); }
         StartCoroutine(TypeText());
     }
-
     private IEnumerator TypeText()
     {
         isTyping = true;
         dialogText.text = "";
-        foreach (char c in currentFullText.ToCharArray())
-        {
-            dialogText.text += c;
-            yield return new WaitForSeconds(0.03f);
-        }
+        foreach (char c in currentFullText.ToCharArray()) { dialogText.text += c; yield return new WaitForSeconds(0.03f); }
         isTyping = false;
     }
 
@@ -193,6 +188,8 @@ public class StoryManager : MonoBehaviour
         choicePanel.SetActive(true);
         foreach (Transform child in choiceButtonContainer) Destroy(child.gameObject);
 
+        // 显示选项时，需要判断好感度要求
+        // 注意：这里读取的是当前存档的总好感度 + 本局临时好感度
         int currentTotalAffection = SaveManager.Instance.CurrentGameData.affinity + tempAffection;
 
         foreach (var choice in choices)
@@ -216,7 +213,10 @@ public class StoryManager : MonoBehaviour
 
     private void OnChoiceSelected(StoryChoice choice)
     {
+        // 只有在非回顾模式下，或者为了临时逻辑，可以增加 tempAffection
+        // 但在 EndStorySegment 时我们会拦截保存
         tempAffection += choice.addAffection;
+
         choicePanel.SetActive(false);
 
         if (choice.jumpToNodeIndex != -1)
@@ -225,37 +225,61 @@ public class StoryManager : MonoBehaviour
         NextNode();
     }
 
-    // ================= 核心：场景流转逻辑 =================
+    // ================= 核心修改：结算逻辑 =================
     private void EndStorySegment()
     {
-        // 1. 结算本次剧情获得的好感度
-        SaveManager.Instance.CurrentGameData.affinity += tempAffection;
-        SaveManager.Instance.SaveCurrentGame();
+        // 1. 处理好感度保存
+        // 如果是回顾模式，不要保存好感度，防止刷分
+        if (!isReplayMode)
+        {
+            if (tempAffection != 0)
+            {
+                SaveManager.Instance.CurrentGameData.affinity += tempAffection;
+                SaveManager.Instance.SaveCurrentGame();
+                Debug.Log($"[Story] 保存好感度变化: {tempAffection}");
+            }
+        }
+        else
+        {
+            Debug.Log("[Story] 回顾模式：跳过好感度保存");
+        }
 
-        // 2. 检查接力棒往哪传
+        // 2. 判断是否有小游戏
         if (!string.IsNullOrEmpty(currentConfig.miniGameSceneName))
         {
-            Debug.Log($"剧情结束，准备进入小游戏场景: {currentConfig.miniGameSceneName}");
-            // 暂时跳过 Message，直接进入小游戏
+            Debug.Log($"剧情结束，准备进入小游戏: {currentConfig.miniGameSceneName}");
+            // 注意：进入小游戏后，小游戏的 Controller 也需要知道这是回顾模式
+            // 如果小游戏也会增加章节进度，你需要再次设置 PlayerPrefs 或传递参数
+            if (isReplayMode)
+            {
+                PlayerPrefs.SetInt("IsReplayMode", 1); // 告诉小游戏这是回顾
+            }
+
             SceneManager.LoadScene(currentConfig.miniGameSceneName);
         }
         else
         {
-            Debug.Log("本章没有小游戏，直接结算章节并返回主页。");
+            Debug.Log("本章没有小游戏，直接结算章节流程");
             EndChapterFlow();
         }
     }
 
-    // 真正结算整个章节，推进进度
+    // 处理无小游戏的章节结束，或从小游戏返回（如果逻辑在这的话）
     private void EndChapterFlow()
     {
-        // 推进章节号
-        if (currentConfig != null)
+        // 核心逻辑：只有不是回顾模式，才推进章节 ID
+        if (!isReplayMode && currentConfig != null)
         {
             SaveManager.Instance.CurrentGameData.currentChapter = currentConfig.nextChapterId;
             SaveManager.Instance.SaveCurrentGame();
+            Debug.Log($"[Story] 章节进度更新为: {currentConfig.nextChapterId}");
         }
-        // 返回主界面
+        else
+        {
+            Debug.Log("[Story] 回顾模式：跳过章节进度更新");
+        }
+
+        // 返回主菜单
         SceneManager.LoadScene("01_MainUI");
     }
 }
