@@ -11,8 +11,8 @@ public class M3_GameManager : MonoBehaviour
     private string mainMenuSceneName = "01_MainUI";
 
     [Header("Game Settings")]
-    public int maxHealth = 100;        // ³õÊ¼ÄÍĞÄÖµ
-    public float levelDuration = 120f; // ¹Ø¿¨×î´óÊ±³¤£¨Ãë£©
+    public int maxHealth = 100;        // åˆå§‹è€å¿ƒå€¼
+    public float levelDuration = 120f; // å…³å¡æœ€å¤§æ—¶é•¿ï¼ˆç§’ï¼‰
 
     [Header("Runtime Data (Read Only)")]
     public float currentLevelTime = 0f;
@@ -22,7 +22,7 @@ public class M3_GameManager : MonoBehaviour
     public RectTransform revenueIconTransform;
     public RectTransform patienceHintText;
 
-    // --- ÊÂ¼şÏµÍ³ ---
+    // --- äº‹ä»¶ç³»ç»Ÿ ---
     public event Action<int> OnScoreChanged;
     public event Action<int> OnHealthChanged;
     public event Action OnGameOver;
@@ -37,9 +37,9 @@ public class M3_GameManager : MonoBehaviour
         else Destroy(gameObject);
         Time.timeScale = 1f;
 
-        // Ç¿ÖÆ¿ªÆôÈÕÖ¾
+        // å¼ºåˆ¶å¼€å¯æ—¥å¿—
         Debug.unityLogger.logEnabled = true;
-        // È·±£¹ıÂËÆ÷²»¹ıÂËÈÎºÎÀàĞÍ
+        // ç¡®ä¿è¿‡æ»¤å™¨ä¸è¿‡æ»¤ä»»ä½•ç±»å‹
         Debug.unityLogger.filterLogType = LogType.Log;
     }
 
@@ -52,16 +52,16 @@ public class M3_GameManager : MonoBehaviour
 
     void Update()
     {
-        // Ö»ÓĞÔÚÓÎÏ·½øĞĞÖĞ²Å¼ÆÊ±
+        // åªæœ‰åœ¨æ¸¸æˆè¿›è¡Œä¸­æ‰è®¡æ—¶
         if (state == M3_GameState.Playing)
         {
-            // Õı¼ÆÊ±Âß¼­£ºÊ±¼äÀÛ¼Ó
+            // æ­£è®¡æ—¶é€»è¾‘ï¼šæ—¶é—´ç´¯åŠ 
             currentLevelTime += Time.deltaTime;
             /*
-            (¿ÉÑ¡) Èç¹û´ïµ½ÁË¹Ø¿¨ÏŞÊ±£¬ÓÎÏ·½áÊø
+            (å¯é€‰) å¦‚æœè¾¾åˆ°äº†å…³å¡é™æ—¶ï¼Œæ¸¸æˆç»“æŸ
             if (currentLevelTime >= levelDuration)
             {
-                currentLevelTime = levelDuration; // ĞŞÕı×îºóÒ»Ö¡µÄÒç³ö
+                currentLevelTime = levelDuration; // ä¿®æ­£æœ€åä¸€å¸§çš„æº¢å‡º
                 EndGame();
             }
             */
@@ -83,18 +83,18 @@ public class M3_GameManager : MonoBehaviour
 
     public void StartGame()
     {
-        // 1. ÖØÖÃÊıÖµ
+        // 1. é‡ç½®æ•°å€¼
         currentScore = 0;
         currentHealth = maxHealth;
-        currentLevelTime = 0f; // Ê±¼ä¹éÁã
+        currentLevelTime = 0f; // æ—¶é—´å½’é›¶
 
-        // 2. ÇĞ»»×´Ì¬
+        // 2. åˆ‡æ¢çŠ¶æ€
         state = M3_GameState.Playing;
 
-        // 3. Í¨ÖªËùÓĞ¼àÌıÕß£¨UI¡¢¶©µ¥¹ÜÀíÆ÷µÈ£©
+        // 3. é€šçŸ¥æ‰€æœ‰ç›‘å¬è€…ï¼ˆUIã€è®¢å•ç®¡ç†å™¨ç­‰ï¼‰
         OnScoreChanged?.Invoke(currentScore);
         OnHealthChanged?.Invoke(currentHealth);
-        OnGameStarted?.Invoke(); // Í¨Öª´ó¼ÒÓÎÏ·ÖØĞÂ¿ªÊ¼ÁË
+        OnGameStarted?.Invoke(); // é€šçŸ¥å¤§å®¶æ¸¸æˆé‡æ–°å¼€å§‹äº†
         
         Debug.Log("Game Started!");
     }
@@ -104,28 +104,28 @@ public class M3_GameManager : MonoBehaviour
         if (isPaused)
         {
             state = M3_GameState.Paused;
-            Time.timeScale = 0f; // ¶³½áÓÎÏ·Ê±¼ä£¨TrayController ºÍ ¶¯»­¶¼»áÍ££©
+            Time.timeScale = 0f; // å†»ç»“æ¸¸æˆæ—¶é—´ï¼ˆTrayController å’Œ åŠ¨ç”»éƒ½ä¼šåœï¼‰
         }
         else
         {
             state = M3_GameState.Playing;
-            Time.timeScale = 1f; // »Ö¸´Ê±¼ä
+            Time.timeScale = 1f; // æ¢å¤æ—¶é—´
         }
         OnGamePaused?.Invoke(isPaused);
     }
     public void RetryLevel()
     {
-        Time.timeScale = 1f; // ±ØĞë»Ö¸´Ê±¼ä£¬·ñÔòĞÂ³¡¾°Ò²ÊÇÍ£µÄ
+        Time.timeScale = 1f; // å¿…é¡»æ¢å¤æ—¶é—´ï¼Œå¦åˆ™æ–°åœºæ™¯ä¹Ÿæ˜¯åœçš„
         addRevenue();
         //StartGame();
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        TransitionManager.Instance.SwitchScene(SceneManager.GetActiveScene().buildIndex);
     }
     public void ReturnToMenu()
     {
         Time.timeScale = 1f;
         addRevenue();
         BGMManager.Instance.bgm.Stop();
-        SceneManager.LoadScene(mainMenuSceneName);
+        TransitionManager.Instance.SwitchScene(mainMenuSceneName);
     }
     public void AddScore(int amount)
     {
@@ -141,7 +141,7 @@ public class M3_GameManager : MonoBehaviour
 
         currentHealth += amount;
 
-        // ÏŞÖÆÑªÁ¿ÔÚ 0 µ½ maxHealth Ö®¼ä
+        // é™åˆ¶è¡€é‡åœ¨ 0 åˆ° maxHealth ä¹‹é—´
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
 
         OnHealthChanged?.Invoke(currentHealth);
@@ -154,7 +154,7 @@ public class M3_GameManager : MonoBehaviour
 
     private void EndGame()
     {
-        if (state == M3_GameState.GameOver) return; // ·ÀÖ¹ÖØ¸´µ÷ÓÃ
+        if (state == M3_GameState.GameOver) return; // é˜²æ­¢é‡å¤è°ƒç”¨
 
         state = M3_GameState.GameOver;
         Debug.Log($"Game Over! Final Score: {currentScore}, Time: {currentLevelTime:F2}s");
@@ -167,13 +167,13 @@ public class M3_GameManager : MonoBehaviour
         return string.Format("{0:D2}:{1:D2}", timeSpan.Minutes, timeSpan.Seconds);
     }
 
-    public void addRevenue() // ¶ÔÂÃ·ÑµÄÔö¼ÓÂß¼­
+    public void addRevenue() // å¯¹æ—…è´¹çš„å¢åŠ é€»è¾‘
     {
         GameData gameData = SaveManager.Instance.CurrentGameData;
         int amount = this.currentScore;
         gameData.money += amount;
         var bankHistory = gameData.GetOrCreateInfo("System_Bank");
-        bankHistory.chatLog.Add(new ChatMessage { sender = SenderType.System, type = MessageType.SystemAlert, content = $"¡¾Ê°¹â²ÍÌü¡¿µ½ÕË ${amount}¡£", timeStamp = "Now" });
+        bankHistory.chatLog.Add(new ChatMessage { sender = SenderType.System, type = MessageType.SystemAlert, content = $"ã€æ‹¾å…‰é¤å…ã€‘åˆ°è´¦ ${amount}ã€‚", timeStamp = "Now" });
         bankHistory.hasUnread = true;
         //RefreshContactList();
         SaveManager.Instance.SaveCurrentGame();

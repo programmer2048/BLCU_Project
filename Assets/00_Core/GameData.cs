@@ -33,54 +33,52 @@ public class GameData
     }
 
     public GameData() { }
-
-    // --- ³õÊ¼»¯Ô¤ÉèÊı¾İ ---
     private void InitPresetData()
     {
-        // 1. ½âËøÁªÏµÈË
+        // è§£é”è”ç³»äºº
         unlockedContactIds.Add("Work_Group");
         unlockedContactIds.Add("Mom");
         unlockedContactIds.Add("Dad");
         unlockedContactIds.Add("Boss");
         unlockedContactIds.Add("System_Bank");
 
-        // 2. ×¢ÈëÔ¤ÉèÁÄÌì¼ÇÂ¼
-        // ÈºÁÄ
-        AddPresetChat("Work_Group", SenderType.NPC, "³Â¸çÈ¥É½Î÷ÁË£¿ÌıËµÄÇ±ß¹Å½¨Í¦¶à£¬ÅÄµãÕÕÆ¬»ØÀ´°¡", "Ğ¡Íõ");
-        AddPresetChat("Work_Group", SenderType.NPC, "ÄêÇáÈË³öÈ¥×ß×ßÍ¦ºÃ£¬»ØÀ´¼ÌĞø»­Í¼[doge]", "ÖÜ½ã");
-        AddPresetChat("Work_Group", SenderType.NPC, "»ØÀ´»¹ÊÇÒ»Ñù¸ÄÍ¼£¬¼×·½ÓÀÔ¶²»ÂúÒâ£¨ÁÑ¿ª£©", "´óÁõ");
+        // æ³¨å…¥é¢„è®¾èŠå¤©è®°å½•
+        // ç¾¤èŠ
+        AddPresetChat("Work_Group", SenderType.NPC, "é™ˆå“¥å»å±±è¥¿äº†ï¼Ÿå¬è¯´é‚£è¾¹å¤å»ºæŒºå¤šï¼Œæ‹ç‚¹ç…§ç‰‡å›æ¥å•Š", "å°ç‹");
+        AddPresetChat("Work_Group", SenderType.NPC, "å¹´è½»äººå‡ºå»èµ°èµ°æŒºå¥½ï¼Œå›æ¥ç»§ç»­ç”»å›¾[doge]", "å‘¨å§");
+        AddPresetChat("Work_Group", SenderType.NPC, "å›æ¥è¿˜æ˜¯ä¸€æ ·æ”¹å›¾ï¼Œç”²æ–¹æ°¸è¿œä¸æ»¡æ„ï¼ˆè£‚å¼€ï¼‰", "å¤§åˆ˜");
 
-        // ÂèÂè
-        AddPresetChat("Mom", SenderType.NPC, "¶ù×Ó£¬µ½É½Î÷ÁË£¿ÄÇ±ßÀä²»Àä°¡£¿");
-        AddPresetChat("Mom", SenderType.NPC, "ÄãÒ¯Ò¯µ±ÄêÈ¥É½Î÷£¬»ØÀ´¸øÎÒ´øÁËÒ»°üºìÔæ£¬ÌØ±ğÌğ¡£Äã¿´µ½ÓĞÂôµÄÒ²Âòµã³¢³¢");
-        AddPresetChat("Mom", SenderType.NPC, "²»¹ı±ğÂòÌ«¶à£¬ÄÃ²»¶¯");
+        // å¦ˆå¦ˆ
+        AddPresetChat("Mom", SenderType.NPC, "å„¿å­ï¼Œåˆ°å±±è¥¿äº†ï¼Ÿé‚£è¾¹å†·ä¸å†·å•Šï¼Ÿ");
+        AddPresetChat("Mom", SenderType.NPC, "ä½ çˆ·çˆ·å½“å¹´å»å±±è¥¿ï¼Œå›æ¥ç»™æˆ‘å¸¦äº†ä¸€åŒ…çº¢æ£ï¼Œç‰¹åˆ«ç”œã€‚ä½ çœ‹åˆ°æœ‰å–çš„ä¹Ÿä¹°ç‚¹å°å°");
+        AddPresetChat("Mom", SenderType.NPC, "ä¸è¿‡åˆ«ä¹°å¤ªå¤šï¼Œæ‹¿ä¸åŠ¨");
 
-        // °Ö°Ö
-        AddPresetChat("Dad", SenderType.NPC, "×ª·¢ÁËÒ»ÆªÎÄÕÂ£º¡¶É½Î÷Ó¦ÏØÄ¾Ëş£ºÇ§Äê²»µ¹µÄÃØÃÜ¡·");
-        AddPresetChat("Dad", SenderType.NPC, "Äãµ½ÄÇ¶ùÁË£¬°ïÎÒÅÄÕÅËşµÄÈ«¾°£¬ÒªÕıÃæµÄ");
-        AddPresetChat("Dad", SenderType.NPC, "ÄãÒ¯Ò¯ÓĞÕÅÀÏÕÕÆ¬£¬¾ÍÊÇÔÚËşÇ°ÃæÅÄµÄ£¬ºÚ°×µÄÄÇÖÖ¡£ºóÀ´°á¼ÒÕÒ²»×ÅÁË");
+        // çˆ¸çˆ¸
+        AddPresetChat("Dad", SenderType.NPC, "è½¬å‘äº†ä¸€ç¯‡æ–‡ç« ï¼šã€Šå±±è¥¿åº”å¿æœ¨å¡”ï¼šåƒå¹´ä¸å€’çš„ç§˜å¯†ã€‹");
+        AddPresetChat("Dad", SenderType.NPC, "ä½ åˆ°é‚£å„¿äº†ï¼Œå¸®æˆ‘æ‹å¼ å¡”çš„å…¨æ™¯ï¼Œè¦æ­£é¢çš„");
+        AddPresetChat("Dad", SenderType.NPC, "ä½ çˆ·çˆ·æœ‰å¼ è€ç…§ç‰‡ï¼Œå°±æ˜¯åœ¨å¡”å‰é¢æ‹çš„ï¼Œé»‘ç™½çš„é‚£ç§ã€‚åæ¥æ¬å®¶æ‰¾ä¸ç€äº†");
 
-        // ÀÏ°å
-        AddPresetChat("Boss", SenderType.NPC, "Ğ¡³Â£¬ÄãÕâ´ÎÍ£Ğ½ÁôÖ°µÄÉêÇë£¬ÎÒ¸úÉÏÃæÄ¥ÁË°ëÌì²ÅÅúÏÂÀ´£¬ÏÂ²»ÎªÀı¡£");
-        AddPresetChat("Boss", SenderType.NPC, "¶ÔÁË£¬ÃÀÊõ¹İµÄÏîÄ¿¼×·½»¹ÔÚ´ß£¬Ëµ·½°¸»¹µÃ¸Ä¡£ÎÒ¸úËûÃÇËµÄãÔÚÍâ³ö²î£¬»ØÀ´ÔÙËµ¡£");
-        AddPresetChat("Boss", SenderType.Player, "¡­¡­Âé·³ÄúÁË¡£");
-        AddPresetChat("Boss", SenderType.NPC, "Ã»ÊÂ¡£»ØÀ´ºÃºÃ¸É»î¾ÍĞĞ¡£");
+        // è€æ¿
+        AddPresetChat("Boss", SenderType.NPC, "å°é™ˆï¼Œä½ è¿™æ¬¡åœè–ªç•™èŒçš„ç”³è¯·ï¼Œæˆ‘è·Ÿä¸Šé¢ç£¨äº†åŠå¤©æ‰æ‰¹ä¸‹æ¥ï¼Œä¸‹ä¸ä¸ºä¾‹ã€‚");
+        AddPresetChat("Boss", SenderType.NPC, "å¯¹äº†ï¼Œç¾æœ¯é¦†çš„é¡¹ç›®ç”²æ–¹è¿˜åœ¨å‚¬ï¼Œè¯´æ–¹æ¡ˆè¿˜å¾—æ”¹ã€‚æˆ‘è·Ÿä»–ä»¬è¯´ä½ åœ¨å¤–å‡ºå·®ï¼Œå›æ¥å†è¯´ã€‚");
+        AddPresetChat("Boss", SenderType.Player, "â€¦â€¦éº»çƒ¦æ‚¨äº†ã€‚");
+        AddPresetChat("Boss", SenderType.NPC, "æ²¡äº‹ã€‚å›æ¥å¥½å¥½å¹²æ´»å°±è¡Œã€‚");
     }
 
-    // ¸¨Öú·½·¨£ºÌí¼Óµ¥Ìõ¼ÇÂ¼
+    // è¾…åŠ©æ–¹æ³•ï¼šæ·»åŠ å•æ¡è®°å½•
     private void AddPresetChat(string contactId, SenderType type, string content, string senderName = "")
     {
         var history = GetOrCreateInfo(contactId);
-        string finalContent = string.IsNullOrEmpty(senderName) ? content : $"{senderName}£º{content}";
+        string finalContent = string.IsNullOrEmpty(senderName) ? content : $"{senderName}ï¼š{content}";
 
         history.chatLog.Add(new ChatMessage
         {
             sender = type,
             type = MessageType.Text,
             content = finalContent,
-            timeStamp = "×òÌì" // Ò²¿ÉÒÔĞ´¾ßÌåÊ±¼ä
+            timeStamp = "æ˜¨å¤©" // ä¹Ÿå¯ä»¥å†™å…·ä½“æ—¶é—´
         });
-        history.hasUnread = true; // ³õÊ¼×´Ì¬ÉèÎªÎ´¶Á
+        history.hasUnread = true; // åˆå§‹çŠ¶æ€è®¾ä¸ºæœªè¯»
     }
 
     public ContactHistoryData GetOrCreateInfo(string id)

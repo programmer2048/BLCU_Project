@@ -160,7 +160,7 @@ public class SaveManager : MonoBehaviour
         SaveGlobalSettings();
         Debug.Log("[SaveManager] 存档清理完成，正在返回启动场景...");
         // 5. 返回 Boot 场景（确保 Boot 场景名为 "00_Boot"）
-        SceneManager.LoadScene("00_Boot");
+        TransitionManager.Instance.SwitchScene("00_Boot");
     }
     public bool HasAnySave()
     {

@@ -1,13 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement;
 using UnityEngine.Video;
 using System.Collections;
 
 public class BootSceneController : MonoBehaviour
 {
     [Header("核心按钮")]
-    public Button startButton;     // 主界面原本的开始/继续按钮
+    public Button startButton;     
     public Button settingsButton;
     public Button aboutButton;
     public Button quitButton;
@@ -28,12 +27,12 @@ public class BootSceneController : MonoBehaviour
     public AudioClip bgmClip;
 
     [Header("--- 视频层内部按钮 ---")]
-    public Button skipButton;            // 视频播放时的“跳过”按钮
-    public Button finalStartButton;      // 视频结束后出现的“进入游戏”按钮
+    public Button skipButton;            
+    public Button finalStartButton;      
 
     // 状态标记
     private bool hasSaveFile = false;
-    private bool isVideoSkipped = false; // 标记是否点击了跳过
+    private bool isVideoSkipped = false; 
 
     void Awake()
     {
@@ -55,15 +54,12 @@ public class BootSceneController : MonoBehaviour
         BindButton(aboutButton, OnClickAbout);
         BindButton(quitButton, OnClickQuit);
 
-        // --- 初始化视频层状态 ---
         if (introVideoPanel != null)
         {
-            introVideoPanel.SetActive(false); // 默认隐藏
-            // 如果没有赋值，尝试自动获取
+            introVideoPanel.SetActive(false); 
             if (videoCanvasGroup == null) videoCanvasGroup = introVideoPanel.GetComponent<CanvasGroup>();
             if (videoCanvasGroup == null) videoCanvasGroup = introVideoPanel.AddComponent<CanvasGroup>();
-
-            videoCanvasGroup.alpha = 0f; // 确保初始透明度为0
+            videoCanvasGroup.alpha = 0f; 
         }
 
         if (skipButton != null)
@@ -74,7 +70,7 @@ public class BootSceneController : MonoBehaviour
 
         if (finalStartButton != null)
         {
-            finalStartButton.gameObject.SetActive(false); // 初始隐藏
+            finalStartButton.gameObject.SetActive(false); 
             finalStartButton.onClick.AddListener(OnFinalStartClicked);
         }
 
@@ -86,10 +82,7 @@ public class BootSceneController : MonoBehaviour
         bool canContinue = SaveManager.Instance.HasAnySave();
         hasSaveFile = canContinue;
 
-        if (startButtonText != null)
-        {
-            startButtonText.text = canContinue ? "继续旅程" : "开始寻梁";
-        }
+        if (startButtonText != null) startButtonText.text = canContinue ? "继续旅程" : "开始寻梁";
         startButton.interactable = true;
     }
 
@@ -97,38 +90,33 @@ public class BootSceneController : MonoBehaviour
     {
         Debug.Log("[Boot] 点击主菜单开始...");
         startButton.interactable = false;
-
-        BGMManager.Instance.bgm.Stop(); // 暂停 bgm
+        BGMManager.Instance.bgm.Stop(); 
 
         if (hasSaveFile)
         {
-            // 旧存档：直接加载
             Debug.Log("[Boot] 继续旧存档...");
             SaveManager.Instance.ContinueLastGame();
-            StartCoroutine(LoadSceneAsyncProcess());
+            
+            // ★ 修改点1：直接调用全局管理器切换到游戏场景（使用 int 索引）
+            TransitionManager.Instance.SwitchScene(mainSceneBuildIndex);
         }
         else
         {
-            // 新存档：进入视频流程
             Debug.Log("[Boot] 准备进入新游戏视频流程...");
             StartCoroutine(PlayIntroFlow());
         }
     }
 
-    // --- 流程核心协程 ---
     IEnumerator PlayIntroFlow()
     {
-        // 1. 激活面板，但此时 Alpha 是 0
         introVideoPanel.SetActive(true);
-        if (skipButton != null) skipButton.gameObject.SetActive(false); // 先不显示跳过，等淡入完
+        if (skipButton != null) skipButton.gameObject.SetActive(false); 
 
-        // 准备视频
         introVideoPlayer.clip = introClip;
         introVideoPlayer.Prepare();
         while (!introVideoPlayer.isPrepared) yield return null;
 
-        // 2. 执行淡入动画 (0 -> 1)
-        float fadeDuration = 1.0f; // 淡入耗时1秒
+        float fadeDuration = 1.0f; 
         float timer = 0f;
         while (timer < fadeDuration)
         {
@@ -142,54 +130,44 @@ public class BootSceneController : MonoBehaviour
         if (skipButton != null) skipButton.gameObject.SetActive(true);
         isVideoSkipped = false;
 
-        Debug.Log("[Boot] 视频播放中...");
-        while (introVideoPlayer.isPlaying && !isVideoSkipped)
-        {
-            yield return null;
-        }
-        Debug.Log("[Boot] 视频阶段结束");
-        introVideoPlayer.Pause(); // 暂停在当前帧（如果是自然播放结束，通常停在最后一帧）
+        while (introVideoPlayer.isPlaying && !isVideoSkipped) yield return null;
+        
+        introVideoPlayer.Pause(); 
 
-        if (skipButton != null) skipButton.gameObject.SetActive(false); // 隐藏跳过按钮
-        if (finalStartButton != null)
-        {
-            finalStartButton.gameObject.SetActive(true);
-        }
-        else
-        {
-            OnFinalStartClicked();
-        }
+        if (skipButton != null) skipButton.gameObject.SetActive(false); 
+        if (finalStartButton != null) finalStartButton.gameObject.SetActive(true);
+        else OnFinalStartClicked();
     }
-    private void OnSkipVideo()
-    {
-        isVideoSkipped = true;
-    }
+
+    private void OnSkipVideo() => isVideoSkipped = true;
+
     private void OnFinalStartClicked()
     {
         Debug.Log("[Boot] 最终确认进入游戏...");
-
-        if (finalStartButton != null) finalStartButton.interactable = false; // 防止连点
+        if (finalStartButton != null) finalStartButton.interactable = false; 
+        
         SaveManager.Instance.CreateNewGame();
-        StartCoroutine(LoadSceneAsyncProcess());
+        
+        TransitionManager.Instance.SwitchScene(mainSceneBuildIndex);
     }
 
-    IEnumerator LoadSceneAsyncProcess()
-    {
-        // 这里可以直接开始加载
-        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(mainSceneBuildIndex, LoadSceneMode.Single);
-
-        asyncLoad.allowSceneActivation = true;
-
-        while (!asyncLoad.isDone)
+    private void OnClickSettings() 
+    { 
+        if (!string.IsNullOrEmpty(settingsSceneName)) 
         {
-            yield return null;
+            SettingsManager.Instance.ToggleSettings();
+            //TransitionManager.Instance.SwitchScene(settingsSceneName);
         }
     }
 
-    private void OnClickSettings() { 
-        //if (!string.IsNullOrEmpty(settingsSceneName)) SceneManager.LoadScene(settingsSceneName);
+    private void OnClickAbout() 
+    { 
+        if (!string.IsNullOrEmpty(aboutSceneName)) 
+        {
+            TransitionManager.Instance.SwitchScene(aboutSceneName);
+        }
     }
-    private void OnClickAbout() { if (!string.IsNullOrEmpty(aboutSceneName)) SceneManager.LoadScene(aboutSceneName); }
+
     private void OnClickQuit()
     {
 #if UNITY_EDITOR
@@ -198,10 +176,12 @@ public class BootSceneController : MonoBehaviour
         Application.Quit();
 #endif
     }
+
     private void BindButton(Button btn, UnityEngine.Events.UnityAction action)
     {
         if (btn != null) { btn.onClick.RemoveAllListeners(); btn.onClick.AddListener(action); }
     }
+
     private void EnsureManager<T>(string name) where T : MonoBehaviour
     {
         if (Object.FindAnyObjectByType<T>() == null)

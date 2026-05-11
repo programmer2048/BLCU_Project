@@ -1,37 +1,37 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem; // ±ØĞëÒıÓÃ
+using UnityEngine.InputSystem; // å¿…é¡»å¼•ç”¨
 using UnityEngine.InputSystem.Controls;
-using UnityEngine.SceneManagement; // ÓÃÓÚ³¡¾°Ìø×ª
+using UnityEngine.SceneManagement; // ç”¨äºåœºæ™¯è·³è½¬
 using TMPro;
-using UnityEngine.UI; // ÓÃÓÚ Button
+using UnityEngine.UI; // ç”¨äº Button
 
 public class RhythmGameManager : MonoBehaviour
 {
-    // ... (±£ÁôÖ®Ç°µÄ Header) ...
-    [Header("×ÊÔ´ÉèÖÃ")]
+    // ... (ä¿ç•™ä¹‹å‰çš„ Header) ...
+    [Header("èµ„æºè®¾ç½®")]
     public AudioSource musicSource;
     public AudioClip musicClip;
     public TextAsset jsonFile;
 
-    [Header("¹ìµÀÉèÖÃ")]
+    [Header("è½¨é“è®¾ç½®")]
     public Transform[] laneContainers;
     public UIString[] strings;
     public UnityEngine.UI.Image[] laneTouchFeedbacks;
     public RectTransform hitLineReference;
 
-    [Header("UI & ÌØĞ§")]
+    [Header("UI & ç‰¹æ•ˆ")]
     public TextMeshProUGUI scoreText;
     public TextMeshProUGUI comboText;
     public RectTransform effectCanvasLayer;
 
-    // --- ĞÂÔö£ºUI Ãæ°åÓë°´Å¥ ---
+    // --- æ–°å¢ï¼šUI é¢æ¿ä¸æŒ‰é’® ---
     [Header("UI Panels & Buttons")]
     public GameObject pausePanel;
     public GameObject gameOverPanel;
-    public TextMeshProUGUI finalScoreText; // ½áËãÃæ°åÉÏµÄ·ÖÏÔÊ¾
-    public TextMeshProUGUI finalScoreReward; // »ñµÃµÄÂÃ·Ñ
+    public TextMeshProUGUI finalScoreText; // ç»“ç®—é¢æ¿ä¸Šçš„åˆ†æ˜¾ç¤º
+    public TextMeshProUGUI finalScoreReward; // è·å¾—çš„æ—…è´¹
     public Button resumeBtn;
     public Button restartBtnPause;
     public Button menuBtnPause;
@@ -41,9 +41,9 @@ public class RhythmGameManager : MonoBehaviour
     [Header("Game Settings")]
     public float noteAppearDistance = 1200f;
     public float universalOffset = 0.0f;
-    public string mainMenuSceneName = "01_MainUI"; // Ö÷²Ëµ¥³¡¾°Ãû
+    public string mainMenuSceneName = "01_MainUI"; // ä¸»èœå•åœºæ™¯å
 
-    [Header("Ô¤ÖÆÌå")]
+    [Header("é¢„åˆ¶ä½“")]
     public GameObject tapNotePrefab;
     public GameObject holdNotePrefab;
     public GameObject trapNotePrefab;
@@ -51,7 +51,7 @@ public class RhythmGameManager : MonoBehaviour
     public GameObject pulsePrefab;
     public GameObject phantomNotePrefab;
 
-    // --- ÄÚ²¿±äÁ¿ ---
+    // --- å†…éƒ¨å˜é‡ ---
     private int currentScore = 0;
     private int combo = 0;
     private int scorePerPerfect = 2;
@@ -61,14 +61,14 @@ public class RhythmGameManager : MonoBehaviour
     private int nextNoteIndex = 0;
     private ChartJSON currentChart;
 
-    // ÒôÆµÍ¬²½ºËĞÄ±äÁ¿
+    // éŸ³é¢‘åŒæ­¥æ ¸å¿ƒå˜é‡
     private double dspSongStartTime;
-    private double pauseBeginDspTime; // ¼ÇÂ¼ÔİÍ£Ë²¼äµÄÊ±¼ä
+    private double pauseBeginDspTime; // è®°å½•æš‚åœç¬é—´çš„æ—¶é—´
     private float secPerBeat;
 
     private bool isGameRunning = false;
-    private bool isPaused = false; // ÔİÍ£×´Ì¬±ê¼Ç
-    private bool isGameOver = false; // ÓÎÏ·½áÊø±ê¼Ç
+    private bool isPaused = false; // æš‚åœçŠ¶æ€æ ‡è®°
+    private bool isGameOver = false; // æ¸¸æˆç»“æŸæ ‡è®°
 
     private readonly float startDelay = 2.0f;
     public float songPosition { get; private set; }
@@ -81,10 +81,10 @@ public class RhythmGameManager : MonoBehaviour
     void Start()
     {
         InitializeGame();
-        BindButtons(); // °ó¶¨°´Å¥ÊÂ¼ş
+        BindButtons(); // ç»‘å®šæŒ‰é’®äº‹ä»¶
     }
 
-    // --- ĞÂÔö£º°´Å¥°ó¶¨Âß¼­ ---
+    // --- æ–°å¢ï¼šæŒ‰é’®ç»‘å®šé€»è¾‘ ---
     void BindButtons()
     {
         if (resumeBtn) resumeBtn.onClick.AddListener(() => TogglePause(false));
@@ -146,25 +146,25 @@ public class RhythmGameManager : MonoBehaviour
 
     void Update()
     {
-        // Èç¹ûÓÎÏ·Î´¿ªÊ¼£¬»òÕß´¦ÓÚÔİÍ£/½áÊø×´Ì¬£¬²»Ö´ĞĞºËĞÄÂß¼­
+        // å¦‚æœæ¸¸æˆæœªå¼€å§‹ï¼Œæˆ–è€…å¤„äºæš‚åœ/ç»“æŸçŠ¶æ€ï¼Œä¸æ‰§è¡Œæ ¸å¿ƒé€»è¾‘
         if (!isGameRunning || isPaused || isGameOver)
         {
-            HandlePauseInputOnly(); // ÔÊĞíÔÚÔİÍ£Ê±¼ì²â ESC ¼ÌĞø
+            HandlePauseInputOnly(); // å…è®¸åœ¨æš‚åœæ—¶æ£€æµ‹ ESC ç»§ç»­
             return;
         }
 
-        // 1. ¼ÆËãµ±Ç°¸èÇúÎ»ÖÃ
+        // 1. è®¡ç®—å½“å‰æ­Œæ›²ä½ç½®
         songPosition = (float)(AudioSettings.dspTime - dspSongStartTime) - universalOffset;
         songPositionInBeats = songPosition / secPerBeat;
 
-        // 2. Éú³ÉÒô·û
+        // 2. ç”ŸæˆéŸ³ç¬¦
         while (nextNoteIndex < allNotes.Count && allNotes[nextNoteIndex].beat < songPositionInBeats + 4.0f)
         {
             SpawnNoteObject(allNotes[nextNoteIndex]);
             nextNoteIndex++;
         }
 
-        // 3. ´¦ÀíÊäÈëºÍÒô·û×´Ì¬
+        // 3. å¤„ç†è¾“å…¥å’ŒéŸ³ç¬¦çŠ¶æ€
         HandleInput();
         UpdateActiveNotes();
 
@@ -174,7 +174,7 @@ public class RhythmGameManager : MonoBehaviour
     void HandlePauseInputOnly()
     {
         if (isGameOver) return;
-        // Ê¹ÓÃ New Input System ¼ì²â ESC
+        // ä½¿ç”¨ New Input System æ£€æµ‹ ESC
         if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
         {
             TogglePause(!isPaused);
@@ -188,16 +188,16 @@ public class RhythmGameManager : MonoBehaviour
 
         if (isPaused)
         {
-            // ÔİÍ£
-            Time.timeScale = 0f; // Í£Ö¹ Update ÖĞµÄ¶¯»­ deltaTime
+            // æš‚åœ
+            Time.timeScale = 0f; // åœæ­¢ Update ä¸­çš„åŠ¨ç”» deltaTime
             musicSource.Pause();
-            pauseBeginDspTime = AudioSettings.dspTime; // ¼ÇÂ¼ÔİÍ£Ê±¿Ì
+            pauseBeginDspTime = AudioSettings.dspTime; // è®°å½•æš‚åœæ—¶åˆ»
 
             if (pausePanel) pausePanel.SetActive(true);
         }
         else
         {
-            // »Ö¸´
+            // æ¢å¤
             Time.timeScale = 1f;
             musicSource.UnPause();
 
@@ -210,13 +210,13 @@ public class RhythmGameManager : MonoBehaviour
 
     void CheckGameEnd()
     {
-        // Èç¹ûÒô·û¶¼Éú³ÉÍêÁË£¬ÇÒ»î¶¯Òô·ûÒ²¶¼Ïú»ÙÁË£¬ÇÒÒôÀÖ²¥ÍêÁË (»ò³¬Ê±)
+        // å¦‚æœéŸ³ç¬¦éƒ½ç”Ÿæˆå®Œäº†ï¼Œä¸”æ´»åŠ¨éŸ³ç¬¦ä¹Ÿéƒ½é”€æ¯äº†ï¼Œä¸”éŸ³ä¹æ’­å®Œäº† (æˆ–è¶…æ—¶)
         bool noMoreNotes = nextNoteIndex >= allNotes.Count && activeNotes.Count == 0;
-        bool musicFinished = !musicSource.isPlaying && songPosition > 1f; // songPosition > 1f ·ÀÖ¹¸Õ¿ªÊ¼Ã»²¥·Å¾Í±»ÅĞ¶¨½áÊø
+        bool musicFinished = !musicSource.isPlaying && songPosition > 1f; // songPosition > 1f é˜²æ­¢åˆšå¼€å§‹æ²¡æ’­æ”¾å°±è¢«åˆ¤å®šç»“æŸ
 
         if (noMoreNotes || (musicFinished && noMoreNotes))
         {
-            // ÉÔÎ¢ÑÓ³ÙÒ»ÏÂÏÔÊ¾½áËã£¬ÌåÑé¸üºÃ
+            // ç¨å¾®å»¶è¿Ÿä¸€ä¸‹æ˜¾ç¤ºç»“ç®—ï¼Œä½“éªŒæ›´å¥½
             StartCoroutine(GameOverRoutine());
         }
     }
@@ -224,36 +224,36 @@ public class RhythmGameManager : MonoBehaviour
     IEnumerator GameOverRoutine()
     {
         isGameOver = true;
-        yield return new WaitForSeconds(1.0f); // µÈ´ı×îºóÌØĞ§²¥Íê
+        yield return new WaitForSeconds(1.0f); // ç­‰å¾…æœ€åç‰¹æ•ˆæ’­å®Œ
 
         Debug.Log("Game Completed!");
         if (gameOverPanel) gameOverPanel.SetActive(true);
         if (finalScoreText) finalScoreText.text = $"{currentScore}";
-        if (finalScoreReward) finalScoreReward.text = $"»ñµÃÂÃ·Ñ£º{Mathf.FloorToInt(currentScore * 0.2f)}";
+        if (finalScoreReward) finalScoreReward.text = $"è·å¾—æ—…è´¹ï¼š{Mathf.FloorToInt(currentScore * 0.2f)}";
 
-        // --- ºËĞÄ£ºĞŞ¸Ä´æµµÊı¾İ ---
+        // --- æ ¸å¿ƒï¼šä¿®æ”¹å­˜æ¡£æ•°æ® ---
         AddRevenueToSave();
     }
 
     void AddRevenueToSave()
     {
-        // µÃ·ÖµÄ 20% ×ª»¯Îª½ğÇ®
-        int moneyEarned = Mathf.FloorToInt(currentScore * 0.2f);
+        // å¾—åˆ†çš„ 60% è½¬åŒ–ä¸ºé‡‘é’±
+        int moneyEarned = Mathf.FloorToInt(currentScore * 0.6f);
 
-        // Ôö¼Ó½ğÇ® (ÒıÓÃ SaveManager)
+        // å¢åŠ é‡‘é’± (å¼•ç”¨ SaveManager)
         if (SaveManager.Instance != null)
         {
-            SaveManager.Instance.CurrentGameData.money += moneyEarned;
+            //SaveManager.Instance.CurrentGameData.money += moneyEarned;
             GameData gameData = SaveManager.Instance.CurrentGameData;
             int amount = moneyEarned;
             gameData.money += amount;
             var bankHistory = gameData.GetOrCreateInfo("System_Bank");
-            bankHistory.chatLog.Add(new ChatMessage { sender = SenderType.System, type = MessageType.SystemAlert, content = $"¡¾Ô¶É½ÃñËŞ¡¿µ½ÕË ${amount}¡£", timeStamp = "Now" });
+            bankHistory.chatLog.Add(new ChatMessage { sender = SenderType.System, type = MessageType.SystemAlert, content = $"ã€è¿œå±±æ°‘å®¿ã€‘åˆ°è´¦ ${amount}ã€‚", timeStamp = "Now" });
             bankHistory.hasUnread = true;
             //RefreshContactList();
-            SaveManager.Instance.CurrentGameData.money += amount;
+            //SaveManager.Instance.CurrentGameData.money += amount;
             SaveManager.Instance.SaveCurrentGame();
-            Debug.Log($"ÂÃ·ÑÔö¼Ó: {moneyEarned}");
+            Debug.Log($"æ—…è´¹å¢åŠ : {moneyEarned}");
         }
         else
         {
@@ -264,13 +264,13 @@ public class RhythmGameManager : MonoBehaviour
     public void RetryLevel()
     {
         Time.timeScale = 1f;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        TransitionManager.Instance.SwitchScene(SceneManager.GetActiveScene().name);
     }
 
     public void ReturnToMenu()
     {
         Time.timeScale = 1f;
-        SceneManager.LoadScene(mainMenuSceneName);
+        TransitionManager.Instance.SwitchScene(mainMenuSceneName);
     }
     void SpawnNoteObject(ChartNote data)
     {
@@ -280,7 +280,7 @@ public class RhythmGameManager : MonoBehaviour
         if (data.type == "hold") { prefab = holdNotePrefab; type = R_NoteType.Hold; }
         else if (data.type == "trap") { prefab = trapNotePrefab; type = R_NoteType.Trap; }
         if (prefab == null) return;
-        if (data.type == "trap") return; // ÔİÍ£äÖÈ¾"ÏİÚå"
+        if (data.type == "trap") return; // æš‚åœæ¸²æŸ“"é™·é˜±"
         GameObject obj = Instantiate(prefab, laneContainers[data.lane]);
         NoteObject note = obj.GetComponent<NoteObject>();
         note.Init(this, data.beat, data.lane, type, data.duration, hitLineY);
@@ -315,7 +315,7 @@ public class RhythmGameManager : MonoBehaviour
     {
         if (Keyboard.current == null) return;
 
-        // Ö»ÓĞÓÎÏ·ÔËĞĞÊ±²ÅÏìÓ¦¹ìµÀÊäÈë
+        // åªæœ‰æ¸¸æˆè¿è¡Œæ—¶æ‰å“åº”è½¨é“è¾“å…¥
         if (!isPaused && !isGameOver)
         {
             CheckLaneInput(0, Keyboard.current.dKey);
@@ -325,7 +325,7 @@ public class RhythmGameManager : MonoBehaviour
             CheckLaneInput(4, Keyboard.current.lKey);
         }
 
-        // Update ÖĞÒÑ¾­µ¥¶À´¦ÀíÁË HandlePauseInputOnly ÓÃÓÚ¼ì²â ESC
+        // Update ä¸­å·²ç»å•ç‹¬å¤„ç†äº† HandlePauseInputOnly ç”¨äºæ£€æµ‹ ESC
         HandlePauseInputOnly();
     }
     void CheckLaneInput(int lane, KeyControl key)
@@ -377,17 +377,17 @@ public class RhythmGameManager : MonoBehaviour
     {
         if (lane >= laneTouchFeedbacks.Length || laneTouchFeedbacks[lane] == null) return;
 
-        // »ñÈ¡µ±Ç°°´¼üÊÇ·ñ´¦ÓÚ¡°°´×¡¡±×´Ì¬ (isPressed)
+        // è·å–å½“å‰æŒ‰é”®æ˜¯å¦å¤„äºâ€œæŒ‰ä½â€çŠ¶æ€ (isPressed)
         bool isHolding = key.isPressed;
 
         if (isHolding)
         {
-            // Èç¹û°´×¡£¬Ö±½ÓÉèÖÃÎª¸ßÁÁÍ¸Ã÷¶È
+            // å¦‚æœæŒ‰ä½ï¼Œç›´æ¥è®¾ç½®ä¸ºé«˜äº®é€æ˜åº¦
             laneTouchFeedbacks[lane].canvasRenderer.SetAlpha(0.6f);
         }
         else
         {
-            // Èç¹ûÃ»°´×¡£¬»ñÈ¡µ±Ç°Í¸Ã÷¶È²¢Æ½»¬²åÖµµ½ 0
+            // å¦‚æœæ²¡æŒ‰ä½ï¼Œè·å–å½“å‰é€æ˜åº¦å¹¶å¹³æ»‘æ’å€¼åˆ° 0
             float currentAlpha = laneTouchFeedbacks[lane].canvasRenderer.GetAlpha();
             if (currentAlpha > 0f)
             {
@@ -404,7 +404,7 @@ public class RhythmGameManager : MonoBehaviour
         {
             note.TriggerHit();
             int score = isPerfect ? scorePerPerfect : scorePerGood;
-            string text = isPerfect ? "ÍêÃÀ" : "²»´í";
+            string text = isPerfect ? "å®Œç¾" : "ä¸é”™";
             Color col = isPerfect ? new Color(1f, 0.8f, 0.2f) : Color.cyan;
             ShowFeedback(text, col, GetLaneWorldPos(note.laneIndex));
             AddScore(score);
@@ -420,7 +420,7 @@ public class RhythmGameManager : MonoBehaviour
     {
         combo = 0;
         UpdateComboUI();
-        ShowFeedback("ÊÜÉË", Color.red, GetLaneWorldPos(note.laneIndex));
+        ShowFeedback("å—ä¼¤", Color.red, GetLaneWorldPos(note.laneIndex));
         AddScore(-50);
         note.TriggerHit();
         RemoveActiveNote(note);
@@ -430,7 +430,7 @@ public class RhythmGameManager : MonoBehaviour
         combo = 0;
         UpdateComboUI();
         Vector3 pos = note != null ? note.rectTrans.position : GetLaneWorldPos(note.laneIndex);
-        ShowFeedback("´í¹ı", Color.gray, pos);
+        ShowFeedback("é”™è¿‡", Color.gray, pos);
         RemoveActiveNote(note);
         if (note != null) Destroy(note.gameObject);
     }
@@ -438,15 +438,15 @@ public class RhythmGameManager : MonoBehaviour
     {
         combo++;
         UpdateComboUI();
-        ShowFeedback("ÍêÃÀ", new Color(1f, 0.9f, 0.3f), GetLaneWorldPos(note.laneIndex));
+        ShowFeedback("å®Œç¾", new Color(1f, 0.9f, 0.3f), GetLaneWorldPos(note.laneIndex));
         AddScore(scorePerPerfect);
         RemoveActiveNote(note);
         if (note != null) Destroy(note.gameObject);
     }
 
     void AddScore(int val) { currentScore += val; UpdateScoreUI(); }
-    void UpdateScoreUI() { if (scoreText) scoreText.text = $"µÃ·Ö: {currentScore}"; }
-    void UpdateComboUI() { if (comboText) { if (combo > 1) { comboText.text = $"{combo} Á¬»÷"; comboText.gameObject.SetActive(true); if (comboAnimCoroutine != null) StopCoroutine(comboAnimCoroutine); comboAnimCoroutine = StartCoroutine(AnimateComboText()); } else comboText.gameObject.SetActive(false); } }
+    void UpdateScoreUI() { if (scoreText) scoreText.text = $"å¾—åˆ†: {currentScore}"; }
+    void UpdateComboUI() { if (comboText) { if (combo > 1) { comboText.text = $"{combo} è¿å‡»"; comboText.gameObject.SetActive(true); if (comboAnimCoroutine != null) StopCoroutine(comboAnimCoroutine); comboAnimCoroutine = StartCoroutine(AnimateComboText()); } else comboText.gameObject.SetActive(false); } }
     IEnumerator AnimateComboText() { float timer = 0f; float duration = 0.1f; Vector3 startScale = Vector3.one * 1.5f; Vector3 endScale = Vector3.one; while (timer < duration) { timer += Time.deltaTime; if (comboText) comboText.transform.localScale = Vector3.Lerp(startScale, endScale, timer / duration); yield return null; } if (comboText) comboText.transform.localScale = endScale; }
     void ShowFeedback(string text, Color col, Vector3 worldPos)
     {
@@ -491,7 +491,7 @@ public class RhythmGameManager : MonoBehaviour
         rt.localScale = Vector3.one;
         rt.localRotation = Quaternion.identity;
         PhantomNote script = obj.GetComponent<PhantomNote>();
-        string[] scaleChars = { "¹¬", "ÉÌ", "½Ç", "áç", "Óğ" };
+        string[] scaleChars = { "å®«", "å•†", "è§’", "å¾µ", "ç¾½" };
         Color[] smokeColors = { new Color(1f, 0.4f, 0.4f), new Color(1f, 0.8f, 0.2f), new Color(0.4f, 1f, 0.4f), new Color(0.2f, 0.8f, 1f), new Color(0.8f, 0.4f, 1f) };
         int idx = lane % 5;
         if (script) script.Setup(scaleChars[idx], smokeColors[idx]);

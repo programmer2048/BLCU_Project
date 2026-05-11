@@ -6,35 +6,32 @@ public class BlueprintManager : MonoBehaviour
     public static BlueprintManager Instance;
 
     [Header("UI Structure")]
-    public Transform contentParent; // Scroll View µÄ Content
-    public GameObject blueprintItemPrefab; // À¶Í¼ UI µÄÔ¤ÖÆÌå
+    public Transform contentParent;
+    public GameObject blueprintItemPrefab;
 
-    // Ê¹ÓÃ×Öµä·½±ãÍ¨¹ı maidId ¿ìËÙÕÒµ½¶ÔÓ¦µÄ UI ÊµÀı
     private Dictionary<int, BlueprintItemUI> activeBlueprints = new Dictionary<int, BlueprintItemUI>();
 
     private void Awake() { Instance = this; }
 
-    private void Start()
-    {
-    }
-
     public void InitializeBlueprints()
     {
-        // ÇåÀí¾ÉÄÚÈİ
-        foreach (Transform child in contentParent) Destroy(child.gameObject);
-        activeBlueprints.Clear();
+        // ã€æ ¸å¿ƒä¿®æ”¹ã€‘ï¼šå¦‚æœ UI å·²ç»è¢«å®ä¾‹åŒ–è¿‡ï¼Œç›´æ¥é‡ç½®å®ƒä»¬ï¼Œä¸å†æ‰§è¡Œé”€æ¯é€»è¾‘
+        if (activeBlueprints.Count > 0)
+        {
+            foreach (var uiScript in activeBlueprints.Values)
+            {
+                uiScript.ResetState();
+            }
+            return; // æå‰é€€å‡º
+        }
 
-        // ¶¯Ì¬²åÈë 8 ¸öÀ¶Í¼
-        // °´ÕÕ MaidGameManager ÖĞµÄ allMaids ÁĞ±íË³ĞòÉú³É
+        // åˆæ¬¡è¿›å…¥ç¬¬äºŒé˜¶æ®µï¼šåŠ¨æ€ç”Ÿæˆ 8 å¼ è“å›¾
         foreach (var maid in MaidGameManager.Instance.allMaids)
         {
             GameObject go = Instantiate(blueprintItemPrefab, contentParent);
             BlueprintItemUI uiScript = go.GetComponent<BlueprintItemUI>();
 
-            // ³õÊ¼»¯ UI ÄÚÈİ
             uiScript.Setup(maid);
-
-            // ¼ÓÈë×ÖµäË÷Òı
             activeBlueprints.Add(maid.id, uiScript);
         }
     }

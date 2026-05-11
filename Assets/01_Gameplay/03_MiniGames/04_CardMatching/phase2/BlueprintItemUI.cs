@@ -6,25 +6,38 @@ using TMPro;
 public class BlueprintItemUI : MonoBehaviour
 {
     [Header("Internal UI")]
-    public Image displayImage;   // ÏÔÊ¾À¶Í¼»òÔ­Í¼µÄ Image
-    public Slider progressBar;   // ½ø¶ÈÌõ
-    public TextMeshProUGUI maidNameText;    // ÊÌÅ®Ãû×Ö£¨¿ÉÑ¡£©
+    public Image displayImage;
+    public Slider progressBar;
+    public TextMeshProUGUI maidNameText;
 
     private MaidData data;
     private int currentProgress = 0;
-    private int maxProgress = 3; // Ïû³ıÈı´ÎÍê³É
+    private int maxProgress = 3;
 
     public void Setup(MaidData maidData)
     {
         this.data = maidData;
+        ResetState(); // æå–æˆç‹¬ç«‹çš„æ–¹æ³•ï¼Œæ–¹ä¾¿é‡æ–°å¼€å§‹æ—¶è°ƒç”¨
+    }
 
-        // ³õÊ¼ÏÔÊ¾ÎªÀ¶Í¼£¨»òÕßÏß¸å£©
+    // --- æ–°å¢ï¼šä¸“é—¨ç”¨äºé‡ç½®å‰ç«¯çŠ¶æ€çš„æ–¹æ³• ---
+    public void ResetState()
+    {
+        // 1. ã€æ ¸å¿ƒã€‘æ€æ­»å½“å‰æ­£åœ¨æ’­æ”¾çš„ DOTween åŠ¨ç”»ï¼Œé˜²æ­¢åŠ¨ç”»è¦†ç›–é‡ç½®å€¼
+        progressBar.DOKill();
+        displayImage.DOKill();
+        transform.DOKill();
+
+        // 2. æ¸…ç©ºå†…éƒ¨è¿›åº¦
+        currentProgress = 0;
+
+        // 3. é‡ç½®æ ·å¼ä¸ºè“å›¾çŠ¶æ€
         displayImage.sprite = data.blueprintSprite;
-        // Èç¹ûĞèÒªÀ¶Í¼ÓĞµ­µ­µÄÀ¶É«µ÷£¬¿ÉÒÔÉèÖÃÑÕÉ«
         displayImage.color = new Color(0.5f, 0.7f, 1f, 1f);
-
+        transform.localScale = Vector3.one; // é‡ç½®å¯èƒ½å­˜åœ¨çš„ PunchScale ç¼©æ”¾
         progressBar.value = 0;
-        if (maidNameText) maidNameText.text = "???"; // Î´Íê³ÉÇ°ÊÇÎÊºÅ
+
+        if (maidNameText) maidNameText.text = "???";
     }
 
     public void IncreaseProgress()
@@ -32,7 +45,6 @@ public class BlueprintItemUI : MonoBehaviour
         currentProgress++;
         float targetValue = (float)currentProgress / maxProgress;
 
-        // ½ø¶ÈÌõÆ½»¬ÒÆ¶¯
         progressBar.DOValue(targetValue, 0.5f);
 
         if (currentProgress >= maxProgress)
@@ -43,18 +55,12 @@ public class BlueprintItemUI : MonoBehaviour
 
     private void CompleteBlueprint()
     {
-        // 1. ÇĞ»»ÎªÔ­Í¼
         displayImage.sprite = data.sprite;
-
-        // 2. »¹Ô­ÑÕÉ«£¨´ÓÀ¶Í¼É«±ä»Ø°×É«µÄÕæÊµÉ«²Ê£©
         displayImage.DOColor(Color.white, 1f);
-
-        // 3. ¼òµ¥µÄËõ·ÅÌØĞ§
         transform.DOPunchScale(new Vector3(0.1f, 0.1f, 0.1f), 0.5f);
 
-        if (maidNameText) maidNameText.text = "ÒÑĞŞ¸´"; // »òÕß data.maidName
+        if (maidNameText) maidNameText.text = "å·²ä¿®å¤"; // åº”è¯¥æ˜¯ data.maidName ?
 
-        // 4. Í¨Öª×Ü¹Ü
         MaidGameManager.Instance.OnPhase2BlueprintComplete(data.id);
     }
 }

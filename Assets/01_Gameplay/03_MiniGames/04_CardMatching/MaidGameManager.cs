@@ -12,30 +12,30 @@ public class MaidGameManager : MonoBehaviour
     public bool[] phaseUnlocked = new bool[4] { true, false, false, false };
 
     [Header("Data Reference")]
-    public List<MaidData> allMaids; // 8Î»ÊÌÅ®µÄÅäÖÃÊı¾İ
+    public List<MaidData> allMaids; // 8ä½ä¾å¥³çš„é…ç½®æ•°æ®
 
     [Header("Phase 1 Progress")]
-    public HashSet<int> foundIconIds = new HashSet<int>(); // ÒÑÊÕ¼¯µÄÍ¼±êID
-    public HashSet<int> repairedMaidIds = new HashSet<int>(); // ÒÑĞŞ¸´(Phase1Íê³É)µÄID
+    public HashSet<int> foundIconIds = new HashSet<int>(); // å·²æ”¶é›†çš„å›¾æ ‡ID
+    public HashSet<int> repairedMaidIds = new HashSet<int>(); // å·²ä¿®å¤(Phase1å®Œæˆ)çš„ID
 
     [Header("Phase 2 Progress")]
-    public Dictionary<int, float> maidBlueprintProgress = new Dictionary<int, float>(); // ÊÌÅ®À¶Í¼½ø¶È(0-1)
+    public Dictionary<int, float> maidBlueprintProgress = new Dictionary<int, float>(); // ä¾å¥³è“å›¾è¿›åº¦(0-1)
 
-    public int thisChapterId = 4; // µ±Ç°ÊÇµÚ¼¸ÕÂ (ÔÚ Inspector ÉèÖÃ)
-    public int nextChapterId = 5; // ÏÂÒ»ÕÂ ID
+    public int thisChapterId = 4; // å½“å‰æ˜¯ç¬¬å‡ ç«  (åœ¨ Inspector è®¾ç½®)
+    public int nextChapterId = 5; // ä¸‹ä¸€ç«  ID
 
     private void Awake()
     {
-        // Ç¿ÖÆ¿ªÆôÈÕÖ¾
+        // å¼ºåˆ¶å¼€å¯æ—¥å¿—
         Debug.unityLogger.logEnabled = true;
-        // È·±£¹ıÂËÆ÷²»¹ıÂËÈÎºÎÀàĞÍ
+        // ç¡®ä¿è¿‡æ»¤å™¨ä¸è¿‡æ»¤ä»»ä½•ç±»å‹
         Debug.unityLogger.filterLogType = LogType.Log;
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
     }
 
 
-    #region Phase Management (Á÷³Ì¿ØÖÆ)
+    #region Phase Management (æµç¨‹æ§åˆ¶)
 
     public void ChangePhase(int targetPhase)
     {
@@ -44,9 +44,9 @@ public class MaidGameManager : MonoBehaviour
             currentPhase = targetPhase;
             MaidUIManager.Instance.SwitchPhaseUI(targetPhase);
 
-            // ½×¶ÎÇĞ»»Ê±µÄÌØÊâ³õÊ¼»¯
+            // é˜¶æ®µåˆ‡æ¢æ—¶çš„ç‰¹æ®Šåˆå§‹åŒ–
             OnPhaseStarted(targetPhase);
-            Debug.Log($"ÇĞ»»ÖÁ½×¶Î: {targetPhase}");
+            Debug.Log($"åˆ‡æ¢è‡³é˜¶æ®µ: {targetPhase}");
         }
     }
 
@@ -55,13 +55,13 @@ public class MaidGameManager : MonoBehaviour
         switch (phase)
         {
             case 2:
-                // ³õÊ¼»¯µÚ¶ş½×¶Î
-                BlueprintManager.Instance.InitializeBlueprints(); // Éú³ÉÓÒ²àÀ¶Í¼ÁĞ±í
-                ItemSpawner.Instance.GenerateLevel();           // Éú³É×ó²à¶ÑµşÎï
+                // åˆå§‹åŒ–ç¬¬äºŒé˜¶æ®µ
+                BlueprintManager.Instance.InitializeBlueprints(); // ç”Ÿæˆå³ä¾§è“å›¾åˆ—è¡¨
+                ItemSpawner.Instance.GenerateLevel();           // ç”Ÿæˆå·¦ä¾§å †å ç‰©
                 break;
             case 3:
                 //Phase3Manager.StartScratchGame(0);
-                // TODO: ³õÊ¼»¯µÚÈı½×¶Î
+                // TODO: åˆå§‹åŒ–ç¬¬ä¸‰é˜¶æ®µ
                 break;
         }
     }
@@ -72,22 +72,22 @@ public class MaidGameManager : MonoBehaviour
         {
             phaseUnlocked[nextPhaseIndex - 1] = true;
 
-            // Ë¢ĞÂµ¼º½À¸°´Å¥×´Ì¬£¨ÈÃ Phase 3 °´Å¥±äÁÁ£©
+            // åˆ·æ–°å¯¼èˆªæ æŒ‰é’®çŠ¶æ€ï¼ˆè®© Phase 3 æŒ‰é’®å˜äº®ï¼‰
             if (MaidUIManager.Instance != null)
             {
                 MaidUIManager.Instance.RefreshNavigationUI();
 
-                // ¿ÉÑ¡£ºµ¯³öÒ»¸öÌáÊ¾£¬»òÕß×Ô¶¯ÇĞ»»µ½ĞÂ½×¶Î
+                // å¯é€‰ï¼šå¼¹å‡ºä¸€ä¸ªæç¤ºï¼Œæˆ–è€…è‡ªåŠ¨åˆ‡æ¢åˆ°æ–°é˜¶æ®µ
                 // MaidUIManager.Instance.ShowUnlockNotification(nextPhaseIndex);
             }
 
-            Debug.Log($"½×¶Î {nextPhaseIndex} ÒÑ½âËø!");
+            Debug.Log($"é˜¶æ®µ {nextPhaseIndex} å·²è§£é”!");
         }
     }
 
     #endregion
 
-    #region Phase 1 Logic (ÊÕ¼¯ÓëÆ´Í¼)
+    #region Phase 1 Logic (æ”¶é›†ä¸æ‹¼å›¾)
 
     public void CollectIcon(int id)
     {
@@ -96,7 +96,7 @@ public class MaidGameManager : MonoBehaviour
             foundIconIds.Add(id);
             MaidData data = allMaids.Find(m => m.id == id);
             MaidUIManager.Instance.PlayCollectAnimation(data, Input.mousePosition);
-            Debug.Log($"ÒÑÊÕ¼¯ÎïÆ·: {id}");
+            Debug.Log($"å·²æ”¶é›†ç‰©å“: {id}");
         }
     }
 
@@ -105,21 +105,21 @@ public class MaidGameManager : MonoBehaviour
         if (!repairedMaidIds.Contains(id))
         {
             repairedMaidIds.Add(id);
-            // Èç¹û8¸öÈ«²¿ĞŞ¸´£¬½âËøµÚ¶ş½×¶Î
+            // å¦‚æœ8ä¸ªå…¨éƒ¨ä¿®å¤ï¼Œè§£é”ç¬¬äºŒé˜¶æ®µ
             if (repairedMaidIds.Count >= 8) UnlockNextPhase(2);
         }
     }
 
     #endregion
 
-    // ÔÚ MaidGameManager ÀàÖĞÌí¼Ó/ĞŞ¸ÄÒÔÏÂÄÚÈİ
+    // åœ¨ MaidGameManager ç±»ä¸­æ·»åŠ /ä¿®æ”¹ä»¥ä¸‹å†…å®¹
 
     [Header("Phase 2 Progress")]
-    public HashSet<int> completedBlueprintIds = new HashSet<int>(); // ĞÂÔö£º¼ÇÂ¼ÒÑÍê³ÉÀ¶Í¼µÄÅ®ÆÍID
+    public HashSet<int> completedBlueprintIds = new HashSet<int>(); // æ–°å¢ï¼šè®°å½•å·²å®Œæˆè“å›¾çš„å¥³ä»†ID
 
-    #region Phase 2 Logic (À¶Í¼ºÏ³ÉÓë½âËø)
+    #region Phase 2 Logic (è“å›¾åˆæˆä¸è§£é”)
 
-    // ¸Ã·½·¨ÓÉ BlueprintManager µ÷ÓÃ£¬ÓÃÀ´Ôö¼ÓÄ³¸öÅ®ÆÍµÄ½ø¶È
+    // è¯¥æ–¹æ³•ç”± BlueprintManager è°ƒç”¨ï¼Œç”¨æ¥å¢åŠ æŸä¸ªå¥³ä»†çš„è¿›åº¦
     public void UpdateBlueprintProgress(int maidId, float progressDelta)
     {
         if (!maidBlueprintProgress.ContainsKey(maidId))
@@ -127,10 +127,10 @@ public class MaidGameManager : MonoBehaviour
 
         maidBlueprintProgress[maidId] += progressDelta;
 
-        // ½ø¶È´ïµ½»ò³¬¹ı 1.0 (100%)
+        // è¿›åº¦è¾¾åˆ°æˆ–è¶…è¿‡ 1.0 (100%)
         if (maidBlueprintProgress[maidId] >= 1.0f)
         {
-            maidBlueprintProgress[maidId] = 1.0f; // ·â¶¥
+            maidBlueprintProgress[maidId] = 1.0f; // å°é¡¶
             OnPhase2BlueprintComplete(maidId);
         }
     }
@@ -140,24 +140,24 @@ public class MaidGameManager : MonoBehaviour
         if (!completedBlueprintIds.Contains(id))
         {
             completedBlueprintIds.Add(id);
-            Debug.Log($"Å®ÆÍ {id} µÄÀ¶Í¼ÒÑÍêÈ«»Ö¸´£¡µ±Ç°×Ü½ø¶È: {completedBlueprintIds.Count}/{allMaids.Count}");
+            Debug.Log($"å¥³ä»† {id} çš„è“å›¾å·²å®Œå…¨æ¢å¤ï¼å½“å‰æ€»è¿›åº¦: {completedBlueprintIds.Count}/{allMaids.Count}");
 
-            // Èç¹ûÍê³ÉµÄÊıÁ¿µÈÓÚËùÓĞÅ®ÆÍµÄÊıÁ¿
+            // å¦‚æœå®Œæˆçš„æ•°é‡ç­‰äºæ‰€æœ‰å¥³ä»†çš„æ•°é‡
             if (completedBlueprintIds.Count >= allMaids.Count)
             {
-                UnlockNextPhase(3); // ½âËøµÚÈı½×¶Î
-                Debug.Log("<color=green>ËùÓĞÅ®ÆÍÀ¶Í¼ĞŞ¸´Íê±Ï£¡µÚÈı½×¶ÎÒÑ¿ªÆô£¡</color>");
+                UnlockNextPhase(3); // è§£é”ç¬¬ä¸‰é˜¶æ®µ
+                Debug.Log("<color=green>æ‰€æœ‰å¥³ä»†è“å›¾ä¿®å¤å®Œæ¯•ï¼ç¬¬ä¸‰é˜¶æ®µå·²å¼€å¯ï¼</color>");
             }
         }
     }
     public void RestartPhase2()
     {
-        // 1. ÇåÀí²ÛÎ»
+        // 1. æ¸…ç†æ§½ä½
         if (SlotManager.Instance != null)
         {
             SlotManager.Instance.ResetSlot();
         }
-        // 2. ÖØĞÂÉú³É¹Ø¿¨ÎïÆ·
+        // 2. é‡æ–°ç”Ÿæˆå…³å¡ç‰©å“
         if (ItemSpawner.Instance != null)
         {
             ItemSpawner.Instance.GenerateLevel();
@@ -165,18 +165,18 @@ public class MaidGameManager : MonoBehaviour
         maidBlueprintProgress.Clear();
         completedBlueprintIds.Clear();
         BlueprintManager.Instance.InitializeBlueprints(); 
-        Debug.Log("µÚ¶ş½×¶ÎÒÑÖØĞÂ¿ªÊ¼£¡");
+        Debug.Log("ç¬¬äºŒé˜¶æ®µå·²é‡æ–°å¼€å§‹ï¼");
     }
 
     #endregion
 
-    #region Phase 3 Logic (Ô¤Áô)
-    // TODO: µÚÈı½×¶ÎºËĞÄÂß¼­Ö´ĞĞÈë¿Ú
+    #region Phase 3 Logic (é¢„ç•™)
+    // TODO: ç¬¬ä¸‰é˜¶æ®µæ ¸å¿ƒé€»è¾‘æ‰§è¡Œå…¥å£
     #endregion
 
     public void FinishLevelAndExit()
     {
-        // Ö»ÓĞÔÚ·Ç»Ø¹ËÄ£Ê½ÏÂ²Å¸üĞÂ½ø¶È
+        // åªæœ‰åœ¨éå›é¡¾æ¨¡å¼ä¸‹æ‰æ›´æ–°è¿›åº¦
         if (SaveManager.Instance != null && SaveManager.Instance.CurrentGameData != null)
         {
             bool isReplay = PlayerPrefs.GetInt("IsReplayMode", 0) == 1;
@@ -187,11 +187,12 @@ public class MaidGameManager : MonoBehaviour
                 SaveManager.Instance.SaveCurrentGame();
             }
 
-            // ÇåÀí Replay ±ê¼Ç
+            // æ¸…ç† Replay æ ‡è®°
             PlayerPrefs.DeleteKey("IsReplayMode");
 
-            // ·µ»ØÖ÷½çÃæ
-            SceneManager.LoadScene("01_MainUI");
+            // è¿”å›ä¸»ç•Œé¢
+            TransitionManager.Instance.SwitchScene("01_MainUI");
+            //SceneManager.LoadScene("01_MainUI");
         }
     }
 }

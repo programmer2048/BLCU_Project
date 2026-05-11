@@ -35,8 +35,8 @@ public class M3_Piece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         rectTransform.localScale = Vector3.one;
         rectTransform.localRotation = Quaternion.identity; // 重置旋转
         // 如果是障碍物，开始旋转，并且稍微变暗一点或者是特定样子
-        if (type == M3_ItemType.Obstacle)transform.DORotate(new Vector3(0, 0, 360), 5f, RotateMode.FastBeyond360).SetEase(Ease.Linear).SetLoops(-1);// 持续旋转动画
-        else transform.DOKill();// 确保普通物体没有旋转动画残留
+        //if (type == M3_ItemType.Obstacle)transform.DORotate(new Vector3(0, 0, 360), 5f, RotateMode.FastBeyond360).SetEase(Ease.Linear).SetLoops(-1);// 持续旋转动画
+        //else transform.DOKill();// 确保普通物体没有旋转动画残留
     }
 
     public void OnBeginDrag(PointerEventData eventData)

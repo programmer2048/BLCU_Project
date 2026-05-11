@@ -7,11 +7,11 @@ public class DifferenceGameManager : MonoBehaviour
 {
     public static DifferenceGameManager Instance { get; private set; }
 
-    [Header("ÓÎÏ·ÉèÖÃ")]
+    [Header("æ¸¸æˆè®¾ç½®")]
     public int totalDifferences = 3;
     public string nextSceneName = "01_MainUI"; 
 
-    [Header("UI ×é¼ş")]
+    [Header("UI ç»„ä»¶")]
     public TextMeshProUGUI progressText; 
     public GameObject winPanel;      
     public GameObject errorEffect;      
@@ -41,10 +41,10 @@ public class DifferenceGameManager : MonoBehaviour
         }
     }
 
-    // ´¦Àíµã´íµÄÇé¿ö
+    // å¤„ç†ç‚¹é”™çš„æƒ…å†µ
     public void OnBackgroundClicked()
     {
-        Debug.Log("µã´íÁË£¡");
+        Debug.Log("ç‚¹é”™äº†ï¼");
         if (errorEffect != null)
         {
             errorEffect.SetActive(true);
@@ -62,21 +62,21 @@ public class DifferenceGameManager : MonoBehaviour
     void UpdateUI()
     {
         if (progressText != null)
-            progressText.text = $"½ø¶È: {currentFound} / {totalDifferences}";
+            progressText.text = $"è¿›åº¦: {currentFound} / {totalDifferences}";
     }
 
     void GameWin()
     {
-        Debug.Log("È«²¿ÕÒµ½£¡");
+        Debug.Log("å…¨éƒ¨æ‰¾åˆ°ï¼");
         winPanel.SetActive(true);
-        SaveManager.Instance.CurrentGameData.chapterSubState = 0;
-        SaveManager.Instance.CurrentGameData.currentChapter = 3;
-        // ±£´æÍ¨¹Ø×´Ì¬£¬±ÈÈç¸øÍæ¼Ò·¢Ç®»òÕß½âËøÏÂÒ»ÕÂ
+        //SaveManager.Instance.CurrentGameData.chapterSubState = 0;
+        //SaveManager.Instance.CurrentGameData.currentChapter = 3;
+        // ä¿å­˜é€šå…³çŠ¶æ€ï¼Œæ¯”å¦‚ç»™ç©å®¶å‘é’±æˆ–è€…è§£é”ä¸‹ä¸€ç« 
         // SaveManager.Instance.CurrentGameData.money += 100;
         // SaveManager.Instance.SaveCurrentGame();
     }
 
-    // °ó¶¨ÔÚÊ¤ÀûÃæ°åµÄ°´Å¥ÉÏ
+    // ç»‘å®šåœ¨èƒœåˆ©é¢æ¿çš„æŒ‰é’®ä¸Š
     public void GoToNextScene()
     {
         if (SaveManager.Instance != null && SaveManager.Instance.CurrentGameData != null)
@@ -88,10 +88,10 @@ public class DifferenceGameManager : MonoBehaviour
                 SaveManager.Instance.CurrentGameData.chapterSubState = 0;
                 SaveManager.Instance.SaveCurrentGame();
             }
-            // ÇåÀí Replay ±ê¼Ç
+            // æ¸…ç† Replay æ ‡è®°
             PlayerPrefs.DeleteKey("IsReplayMode");
-            // ·µ»ØÖ÷½çÃæ
-            SceneManager.LoadScene("01_MainUI");
+            // è¿”å›ä¸»ç•Œé¢
+            TransitionManager.Instance.SwitchScene("01_MainUI");
         }
     }
 }

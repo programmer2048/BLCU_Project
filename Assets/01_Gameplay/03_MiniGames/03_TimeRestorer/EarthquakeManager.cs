@@ -100,6 +100,9 @@ public class EarthquakeManager : MonoBehaviour
                 rb.linearDamping = 1f;
                 rb.angularDamping = 3f;
                 rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+
+                // ↓↓↓【新增这一行】解除拖拽阶段附加的旋转锁定，允许方块在地震时倾倒 ↓↓↓
+                rb.freezeRotation = false;
             }
             if (col != null) col.sharedMaterial = frictionMat;
         }
@@ -192,7 +195,7 @@ public class EarthquakeManager : MonoBehaviour
             GameData gameData = SaveManager.Instance.CurrentGameData;
             gameData.money += reward;
             var bankHistory = gameData.GetOrCreateInfo("System_Bank");
-            bankHistory.chatLog.Add(new ChatMessage { sender = SenderType.System, type = MessageType.SystemAlert, content = $"【第三章】到账 ${reward}。", timeStamp = "Now" });
+            bankHistory.chatLog.Add(new ChatMessage { sender = SenderType.System, type = MessageType.SystemAlert, content = $"【搭建积木】到账 ${reward}。", timeStamp = "Now" });
             bankHistory.hasUnread = true;
             SaveManager.Instance.SaveCurrentGame();
         }
@@ -246,7 +249,8 @@ public class EarthquakeManager : MonoBehaviour
             // 清理 Replay 标记
             PlayerPrefs.DeleteKey("IsReplayMode");
             // 返回主界面
-            SceneManager.LoadScene("01_MainUI");
+            TransitionManager.Instance.SwitchScene("01_MainUI");
+            //SceneManager.LoadScene("01_MainUI");
         }
     }
 }

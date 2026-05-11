@@ -7,17 +7,17 @@ using System.Collections;
 
 public class mainUISceneController : MonoBehaviour
 {
-    [Header("--- ×ÊÔ´Õ¹Ê¾ ---")]
+    [Header("--- èµ„æºå±•ç¤º ---")]
     public TextMeshProUGUI moneyText;
 
-    [Header("--- ÌáÊ¾ĞÅÏ¢ (Í¨ÓÃ) ---")]
+    [Header("--- æç¤ºä¿¡æ¯ (é€šç”¨) ---")]
     public TextMeshProUGUI notificationText;
 
-    [Header("--- ÕÂ½ÚÑ¡ÔñÆ÷ ---")]
+    [Header("--- ç« èŠ‚é€‰æ‹©å™¨ ---")]
     public List<ChapterSlot> chapterSlots;
     public List<ChapterConfig> allChapterConfigs;
 
-    [Header("--- ¹¦ÄÜ°´Å¥ ---")]
+    [Header("--- åŠŸèƒ½æŒ‰é’® ---")]
     public Button workSystemButton;
     public GameObject workPanel;
     public Button btnRestaurant;
@@ -26,7 +26,7 @@ public class mainUISceneController : MonoBehaviour
     public Button btnSocial;
     public Button btnSetting;
 
-    [Header("--- ³¡¾°Ãû³Æ ---")]
+    [Header("--- åœºæ™¯åç§° ---")]
     public string storySceneName = "04_StoryScenes";
     private string restaurantSceneName = "02_PartTimeJobs";
     private string guesthouseSceneName = "RhythmGame";
@@ -123,38 +123,38 @@ public class mainUISceneController : MonoBehaviour
 
             if (slot.chapterId > playerProgress)
             {
-                // Î´½âËø
+                // æœªè§£é”
                 slot.button.interactable = false;
                 if (slot.lockIcon) slot.lockIcon.SetActive(true);
                 if (slot.checkMarkIcon) slot.checkMarkIcon.SetActive(false);
-                if (slot.costText) slot.costText.text = "Î´½âËø";
+                if (slot.costText) slot.costText.text = "æœªè§£é”";
             }
             else if (slot.chapterId == playerProgress)
             {
-                // µ±Ç°ÕıÔÚ½øĞĞµÄÕÂ½Ú
+                // å½“å‰æ­£åœ¨è¿›è¡Œçš„ç« èŠ‚
                 slot.button.interactable = true;
                 if (slot.lockIcon) slot.lockIcon.SetActive(false);
                 if (slot.checkMarkIcon) slot.checkMarkIcon.SetActive(false);
 
-                // --- ĞŞ¸Ä£º¸ù¾İ subState ÏÔÊ¾ÎÄ±¾ ---
+                // --- ä¿®æ”¹ï¼šæ ¹æ® subState æ˜¾ç¤ºæ–‡æœ¬ ---
                 if (currentData.chapterSubState == 0)
                 {
-                    if (slot.costText) slot.costText.text = $"¿ªÆô: {cost}";
+                    if (slot.costText) slot.costText.text = $"å¼€å¯: {cost}";
                 }
                 else
                 {
-                    if (slot.costText) slot.costText.text = "¼ÌĞø"; // ÒÑ¾­ÔÚ¾çÇé»òĞ¡ÓÎÏ·ÖĞ
+                    if (slot.costText) slot.costText.text = "ç»§ç»­"; // å·²ç»åœ¨å‰§æƒ…æˆ–å°æ¸¸æˆä¸­
                 }
 
                 slot.button.onClick.AddListener(() => OnCurrentChapterClicked(cost, targetId));
             }
             else
             {
-                // ÒÑÍ¨¹Ø
+                // å·²é€šå…³
                 slot.button.interactable = true;
                 if (slot.lockIcon) slot.lockIcon.SetActive(false);
                 if (slot.checkMarkIcon) slot.checkMarkIcon.SetActive(true);
-                if (slot.costText) slot.costText.text = "»Ø¹Ë";
+                if (slot.costText) slot.costText.text = "å›é¡¾";
 
                 slot.button.onClick.AddListener(() => OnReplayChapterClicked(targetId));
             }
@@ -163,39 +163,39 @@ public class mainUISceneController : MonoBehaviour
 
     private void OnCurrentChapterClicked(int cost, int chapterId)
     {
-        // 1. Éç½»×èÈû¼ì²é
+        // 1. ç¤¾äº¤é˜»å¡æ£€æŸ¥
         if (CheckSocialBlockers())
         {
-            ShowNotification("ÊÖ»úÀïÓĞÖØÒªĞÅÏ¢Î´»Ø¸´£¬ÇëÏÈ²é¿´£¡");
+            ShowNotification("æ‰‹æœºé‡Œæœ‰é‡è¦ä¿¡æ¯æœªå›å¤ï¼Œè¯·å…ˆæŸ¥çœ‹ï¼");
             return;
         }
 
-        // 2. ×´Ì¬¼ì²éÓë¿Û·ÑÂß¼­
-        // Èç¹û subState > 0£¬ËµÃ÷ÒÑ¾­¸¶¹ıÇ®ÁË£¬ÕıÔÚ¾çÇéÖĞ(1)»òĞ¡ÓÎÏ·ÖĞ(2)
+        // 2. çŠ¶æ€æ£€æŸ¥ä¸æ‰£è´¹é€»è¾‘
+        // å¦‚æœ subState > 0ï¼Œè¯´æ˜å·²ç»ä»˜è¿‡é’±äº†ï¼Œæ­£åœ¨å‰§æƒ…ä¸­(1)æˆ–å°æ¸¸æˆä¸­(2)
         if (currentData.chapterSubState > 0)
         {
-            Debug.Log($"¼ÌĞøÕÂ½Ú {chapterId}, µ±Ç°×´Ì¬: {currentData.chapterSubState}");
+            Debug.Log($"ç»§ç»­ç« èŠ‚ {chapterId}, å½“å‰çŠ¶æ€: {currentData.chapterSubState}");
             PlayerPrefs.SetInt("SelectedChapterId", chapterId);
             LoadTargetScene(storySceneName);
         }
-        // ·ñÔòÊÇ³õÊ¼×´Ì¬ 0£¬ĞèÒª¿Û·Ñ²¢¸ÄÎª 1
+        // å¦åˆ™æ˜¯åˆå§‹çŠ¶æ€ 0ï¼Œéœ€è¦æ‰£è´¹å¹¶æ”¹ä¸º 1
         else if (currentData.money >= cost)
         {
             currentData.money -= cost;
 
-            // --- ºËĞÄĞŞ¸Ä£ºÉèÖÃ subState Îª 1 (½øÈë¾çÇé) ---
+            // --- æ ¸å¿ƒä¿®æ”¹ï¼šè®¾ç½® subState ä¸º 1 (è¿›å…¥å‰§æƒ…) ---
             currentData.chapterSubState = 1;
 
             SaveManager.Instance.SaveCurrentGame();
             RefreshResourceUI();
 
-            Debug.Log($"¿ªÆôÕÂ½Ú {chapterId}, ¿Û³ı {cost}, ×´Ì¬ÉèÎª 1");
+            Debug.Log($"å¼€å¯ç« èŠ‚ {chapterId}, æ‰£é™¤ {cost}, çŠ¶æ€è®¾ä¸º 1");
             PlayerPrefs.SetInt("SelectedChapterId", chapterId);
             LoadTargetScene(storySceneName);
         }
         else
         {
-            ShowNotification("×Ê½ğ²»×ã£¬¿ìÈ¥´ò¹¤°É£¡");
+            ShowNotification("èµ„é‡‘ä¸è¶³ï¼Œå¿«å»æ‰“å·¥å§ï¼");
         }
     }
 
@@ -203,16 +203,16 @@ public class mainUISceneController : MonoBehaviour
     {
         if (CheckSocialBlockers())
         {
-            ShowNotification("ÊÖ»úÀïÓĞÖØÒªĞÅÏ¢Î´»Ø¸´£¡");
+            ShowNotification("æ‰‹æœºé‡Œæœ‰é‡è¦ä¿¡æ¯æœªå›å¤ï¼");
             return;
         }
 
         PlayerPrefs.SetInt("SelectedChapterId", chapterId);
-        // »Ø¹ËÄ£Ê½²»ĞŞ¸Ä subState
+        // å›é¡¾æ¨¡å¼ä¸ä¿®æ”¹ subState
         LoadTargetScene(storySceneName);
     }
 
-    // ... [UI ÌáÊ¾ºÍ LoadTargetScene ±£³Ö²»±ä] ...
+    // ... [UI æç¤ºå’Œ LoadTargetScene ä¿æŒä¸å˜] ...
     private void ShowNotification(string message)
     {
         if (notificationText == null)
@@ -236,6 +236,6 @@ public class mainUISceneController : MonoBehaviour
     private void LoadTargetScene(string sceneName)
     {
         if (BGMManager.Instance) BGMManager.Instance.bgm.Pause();
-        SceneManager.LoadScene(sceneName);
+        TransitionManager.Instance.SwitchScene(sceneName);
     }
 }

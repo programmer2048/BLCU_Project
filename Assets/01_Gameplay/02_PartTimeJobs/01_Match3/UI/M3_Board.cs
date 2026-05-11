@@ -11,6 +11,8 @@ public class M3_Board : MonoBehaviour
     public int width = 6;
     public int height = 8;
     public float cellSize = 100f;
+    [Tooltip("æ£‹å­ä¹‹é—´çš„é—´éš™")]
+    public float spacing = 10f; // <--- æ–°å¢ï¼šé—´éš™è®¾ç½®
     public Transform boardOrigin;
 
     [Header("Resources")]
@@ -18,13 +20,16 @@ public class M3_Board : MonoBehaviour
     public RectTransform boardPanel;
 
     public List<Sprite> ingredientSprites; // T0, T1, T2, T3
-    public Sprite obstacleSprite;          // ÕÏ°­ÎïÍ¼Æ¬
-    public Sprite bombSprite;              // Õ¨µ¯Í¼Æ¬
+    public Sprite obstacleSprite;          // éšœç¢ç‰©å›¾ç‰‡
+    public Sprite bombSprite;              // ç‚¸å¼¹å›¾ç‰‡
 
     public List<Sprite> itemSprites => ingredientSprites;
 
     private M3_Piece[,] allPieces;
     public BoardState currentState = BoardState.Idle;
+
+    // --- è¾…åŠ©å±æ€§ï¼šè®¡ç®—å¸¦æœ‰é—´éš™çš„å®é™…æ­¥é•¿ ---
+    private float StepSize => cellSize + spacing;
 
     void Start()
     {
@@ -34,11 +39,20 @@ public class M3_Board : MonoBehaviour
         GenerateBoard();
     }
 
+    /// <summary>
+    /// æ ¸å¿ƒä¿®æ”¹ï¼šé‡æ–°è®¡ç®—å¸¦é—´éš™çš„åæ ‡ï¼Œå¹¶ä¿è¯æ•´ä½“æ£‹ç›˜å®Œç¾å±…ä¸­
+    /// </summary>
     public Vector2 GetAnchoredPosition(int x, int y)
     {
-        float startX = -(width * cellSize) / 2f + cellSize / 2f;
-        float startY = -(height * cellSize) / 2f + cellSize / 2f;
-        return new Vector2(startX + x * cellSize, startY + y * cellSize);
+        // æ£‹ç›˜å æ®çš„æ€»å®½åº¦å’Œæ€»é«˜åº¦ (åŒ…å«æ‰€æœ‰æ£‹å­å’Œä¸­é—´çš„é—´éš™)
+        float totalWidth = width * StepSize - spacing;
+        float totalHeight = height * StepSize - spacing;
+
+        // ä»¥ä¸­å¿ƒç‚¹(0,0)ä¸ºåŸºå‡†ï¼Œè®¡ç®—å·¦ä¸‹è§’ç¬¬ä¸€ä¸ªæ£‹å­(0,0)çš„ä¸­å¿ƒç‚¹åæ ‡
+        float startX = -totalWidth / 2f + cellSize / 2f;
+        float startY = -totalHeight / 2f + cellSize / 2f;
+
+        return new Vector2(startX + x * StepSize, startY + y * StepSize);
     }
 
     void GenerateBoard()
@@ -70,7 +84,6 @@ public class M3_Board : MonoBehaviour
 
     bool HasMatchAt(int x, int y, M3_ItemType type)
     {
-        // ÕÏ°­Îï²»²ÎÓëÆÕÍ¨Æ¥Åä¼ì²â
         if (type == M3_ItemType.Obstacle || type == M3_ItemType.Bomb) return false;
 
         if (x >= 2 && CheckType(x - 1, y, type) && CheckType(x - 2, y, type)) return true;
@@ -89,9 +102,10 @@ public class M3_Board : MonoBehaviour
         GameObject go = Instantiate(piecePrefab, boardPanel);
         M3_Piece piece = go.GetComponent<M3_Piece>();
         RectTransform rt = go.GetComponent<RectTransform>();
+
+        // è·å–ç›®æ ‡æœ€ç»ˆåæ ‡
         Vector2 finalPos = GetAnchoredPosition(x, y);
 
-        // ¸ù¾İÀàĞÍÑ¡ÔñÍ¼Æ¬
         Sprite s = null;
         if (type == M3_ItemType.Obstacle) s = obstacleSprite;
         else if (type == M3_ItemType.Bomb) s = bombSprite;
@@ -100,9 +114,10 @@ public class M3_Board : MonoBehaviour
         piece.Init(x, y, this, type, s);
         allPieces[x, y] = piece;
 
+        // æ ¸å¿ƒä¿®æ”¹ï¼šå¦‚æœæ˜¯ä»ä¸Šæ–¹æ‰è½ï¼ˆyOffset > 0ï¼‰ï¼Œæ‰è½çš„èµ·å§‹é«˜åº¦ä¹Ÿè¦è€ƒè™‘é—´éš™æ­¥é•¿
         if (yOffset > 0)
         {
-            rt.anchoredPosition = new Vector2(finalPos.x, finalPos.y + yOffset * cellSize);
+            rt.anchoredPosition = new Vector2(finalPos.x, finalPos.y + yOffset * StepSize);
             piece.MoveTo(x, y, 0.4f);
         }
         else
@@ -119,7 +134,6 @@ public class M3_Board : MonoBehaviour
 
         M3_Piece targetPiece = allPieces[targetX, targetY];
 
-        // Èç¹û½»»»µÄ¶ÔÏóÊÇÕÏ°­Îï£¬½ûÖ¹½»»»
         if (targetPiece != null && targetPiece.type == M3_ItemType.Obstacle) return;
 
         StartCoroutine(SwapAndCheck(piece, targetPiece));
@@ -133,10 +147,8 @@ public class M3_Board : MonoBehaviour
         p2.MoveTo(p2.x, p2.y);
         yield return new WaitForSeconds(0.35f);
 
-        // Õ¨µ¯Âß¼­£ºÈç¹û½»»»µÄÈÎÒâÒ»¸öÊÇÕ¨µ¯£¬Ö±½Ó´¥·¢±¬Õ¨£¬²»ĞèÒª¿´ÊÇ·ñÈıÏû
         if (p1.type == M3_ItemType.Bomb || p2.type == M3_ItemType.Bomb)
         {
-            // Èç¹ûÁ½¸ö¶¼ÊÇÕ¨µ¯£¬¿ÉÒÔ×öÈ«ÆÁÇå¿Õ£¨ÕâÀïÏÈ²»×ö£¬¼òµ¥´¦ÀíÎªÁ½´Î±¬Õ¨£©
             if (p1.type == M3_ItemType.Bomb) ExplodeBomb(p1.x, p1.y);
             if (p2.type == M3_ItemType.Bomb) ExplodeBomb(p2.x, p2.y);
 
@@ -145,12 +157,10 @@ public class M3_Board : MonoBehaviour
         }
         else
         {
-            // ÆÕÍ¨Æ¥ÅäÂß¼­
             List<M3_Piece> matches = FindMatches();
             if (matches.Count > 0) yield return StartCoroutine(ProcessMatches(matches));
             else
             {
-                // Ã»Æ¥Åä£¬»»»ØÀ´
                 SwapData(p1, p2);
                 p1.MoveTo(p1.x, p1.y);
                 p2.MoveTo(p2.x, p2.y);
@@ -169,7 +179,6 @@ public class M3_Board : MonoBehaviour
     List<M3_Piece> FindMatches()
     {
         HashSet<M3_Piece> matchedSet = new HashSet<M3_Piece>();
-        // ¼ò»¯µÄÆ¥ÅäÂß¼­£ººöÂÔÕÏ°­ºÍÕ¨µ¯
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width - 2; x++)
@@ -195,67 +204,57 @@ public class M3_Board : MonoBehaviour
         return matchedSet.ToList();
     }
 
-    // ¸¨Öú£ºÅĞ¶ÏÊÇ·ñÎªÆÕÍ¨Ê³²Ä
     bool IsNormalItem(M3_Piece p)
     {
         return p != null && p.type != M3_ItemType.Obstacle && p.type != M3_ItemType.Bomb;
     }
 
-    // ºËĞÄ£º´¦ÀíÏû³ı£¬°üº¬Éú³ÉÕ¨µ¯ºÍÏû³ıÕÏ°­Âß¼­
     IEnumerator ProcessMatches(List<M3_Piece> matches)
     {
-        // ¼ì²âÊÇ·ñĞèÒªÉú³ÉÕ¨µ¯ (±¾´ÎÏû³ı×ÜÊı >= 7)
         M3_Piece pieceToBecomeBomb = null;
         if (matches.Count >= 7)
         {
-            // Ñ¡ÁĞ±íÖĞµÚÒ»¸ö×÷ÎªÕ¨µ¯Éú³Éµã£¨Ò²¿ÉÒÔËãÖĞĞÄµã£©
             pieceToBecomeBomb = matches[Random.Range(0, matches.Count)];
         }
 
-        // ´¦ÀíÏû³ı
         foreach (var piece in matches)
         {
             if (piece == null) continue;
 
-            // Èç¹ûÕâ¸öÆå×Ó±»Ñ¡ÖĞ±ä³ÉÕ¨µ¯£¬ÏÈ²»Ïú»Ù£¬Ö»¸Ä±äÀàĞÍ
             if (piece == pieceToBecomeBomb)
             {
                 piece.type = M3_ItemType.Bomb;
                 piece.GetComponent<Image>().sprite = bombSprite;
-                piece.transform.DOPunchScale(Vector3.one * 0.5f, 0.3f); // ±äÉíÌØĞ§
+                piece.transform.DOPunchScale(Vector3.one * 0.5f, 0.3f);
                 continue;
             }
 
-            // ÕÏ°­ÎïÏû³ıÂß¼­£º¼ì²é±»Ïû³ıÎïÌåµÄÉÏÏÂ×óÓÒ
             CheckAndDamageObstacle(piece.x + 1, piece.y);
             CheckAndDamageObstacle(piece.x - 1, piece.y);
             CheckAndDamageObstacle(piece.x, piece.y + 1);
             CheckAndDamageObstacle(piece.x, piece.y - 1);
 
-            // Õı³£µÄÏû³ıÓë·Éµ¥Âß¼­
             TriggerPieceClearEffect(piece);
         }
 
-        //yield return new WaitForSeconds(0.2f);
         yield return StartCoroutine(RefillBoard());
     }
 
-    // Ïû³ıµ¥¸ö Piece µÄÊÓ¾õ±íÏÖºÍÂß¼­£¨·ÉÏò¶©µ¥£©
     void TriggerPieceClearEffect(M3_Piece piece)
     {
-        allPieces[piece.x, piece.y] = null; // Âß¼­Çå³ı
+        allPieces[piece.x, piece.y] = null;
 
         TrayController targetTray = OrderManager.Instance.GetTargetTray(piece.type);
         if (targetTray != null)
         {
-            piece.gameObject.SetActive(false); // Òş²ØÔ­Í¼
+            piece.gameObject.SetActive(false);
             FX_Manager.Instance.PlayFlyEffect(
                 ingredientSprites[(int)piece.type],
                 piece.transform.position,
                 targetTray.GetIconPosition(),
                 () => { if (targetTray != null) targetTray.AddProgress(1); }
             );
-            Destroy(piece.gameObject); // ÕâÀïµÄ Destroy ÊÇÏú»ÙÔ­ Piece ÎïÌå
+            Destroy(piece.gameObject);
         }
         else
         {
@@ -263,42 +262,33 @@ public class M3_Board : MonoBehaviour
         }
     }
 
-    // ¼ì²éÊÇ·ñÓĞÕÏ°­Îï²¢Ïû³ı
     void CheckAndDamageObstacle(int x, int y)
     {
         if (x < 0 || x >= width || y < 0 || y >= height) return;
         M3_Piece p = allPieces[x, y];
         if (p != null && p.type == M3_ItemType.Obstacle)
         {
-            // ²¥·ÅËéÁÑÌØĞ§
             p.transform.DOPunchRotation(new Vector3(0, 0, 90), 0.2f);
             p.transform.DOScale(0, 0.2f).OnComplete(() => Destroy(p.gameObject));
-            // ¿ÉÑ¡£ºÕÏ°­ÎïÏû³ı¼Ó·Ö
+
             FX_Manager.Instance.PlayFlyEffect(
                 FX_Manager.Instance.dollarSprite,
-                allPieces[x, y].AnchoredPos,
+                allPieces[x, y].AnchoredPos, // æ³¨æ„ï¼šå¦‚æœè¿™é‡ŒæŠ¥é”™ï¼Œè¯·ç¡®ä¿ M3_Piece åŒ…å« public Vector2 AnchoredPos å±æ€§
                 M3_GameManager.Instance.GetRevenueUIPosition(),
-                ()=>M3_GameManager.Instance.AddScore(1)
+                () => M3_GameManager.Instance.AddScore(2)
             );
-            allPieces[x, y] = null; // Ïû³ıÊı¾İ
+            allPieces[x, y] = null;
         }
     }
 
-    // Õ¨µ¯±¬Õ¨Âß¼­ (5x5)
     public void ExplodeBomb(int cx, int cy)
     {
-        // Õ¨µôÖĞĞÄ£¨Õ¨µ¯×Ô¼º£©
         if (allPieces[cx, cy] != null)
         {
             Destroy(allPieces[cx, cy].gameObject);
             allPieces[cx, cy] = null;
         }
 
-        // ²¥·ÅÒ»¸ö´ó±¬Õ¨ÌØĞ§
-        // FX_Manager.Instance.PlayExplosion(GetWorldPosition(cx, cy));
-        Debug.Log("BOOM!");
-
-        // ±éÀúÖÜÎ§ 5x5
         for (int x = cx - 2; x <= cx + 2; x++)
         {
             for (int y = cy - 2; y <= cy + 2; y++)
@@ -308,13 +298,11 @@ public class M3_Board : MonoBehaviour
                 M3_Piece p = allPieces[x, y];
                 if (p != null)
                 {
-                    // Õ¨µ¯Ò²ÄÜÕ¨µôÕÏ°­Îï
                     if (p.type == M3_ItemType.Obstacle)
                     {
                         Destroy(p.gameObject);
                         allPieces[x, y] = null;
                     }
-                    // ÆÕÍ¨ÎïÌåÔò´¥·¢·Éµ¥Ğ§¹û
                     else if (p.type != M3_ItemType.Bomb)
                     {
                         TriggerPieceClearEffect(p);
@@ -322,8 +310,6 @@ public class M3_Board : MonoBehaviour
                 }
             }
         }
-
-        // Õğ¶¯ÆÁÄ»
         boardPanel.DOShakeAnchorPos(0.3f, 10f);
     }
 
@@ -331,7 +317,6 @@ public class M3_Board : MonoBehaviour
     {
         float speedTime = 0.3f;
 
-        // 1. ÏÂÂä
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -343,11 +328,8 @@ public class M3_Board : MonoBehaviour
                         M3_Piece pieceAbove = allPieces[x, k];
                         if (pieceAbove != null)
                         {
-                            if (pieceAbove.type == M3_ItemType.Obstacle)
-                            {
-                                break;
-                            }
-                            // ÕÒµ½ÁË¿ÉÒÆ¶¯µÄÉÏ·½Æå×Ó
+                            if (pieceAbove.type == M3_ItemType.Obstacle) break;
+
                             allPieces[x, k] = null;
                             allPieces[x, y] = pieceAbove;
                             pieceAbove.MoveTo(x, y, speedTime);
@@ -359,15 +341,13 @@ public class M3_Board : MonoBehaviour
         }
         yield return new WaitForSeconds(speedTime);
 
-        // Éú³ÉĞÂÆå×Ó
         for (int x = 0; x < width; x++)
         {
-            // ¼òµ¥´¦Àí£ºÖ»É¨ÃèËùÓĞµÄ null ¸ñ×Ó
             for (int y = 0; y < height; y++)
             {
                 if (allPieces[x, y] == null)
                 {
-                    int typeIndex = (UnityEngine.Random.Range(0f,1f)>0.05f)?Random.Range(0, ingredientSprites.Count):(int)M3_ItemType.Obstacle; // 5%¸ÅÂÊÖØĞÂÉú³ÉÕÏ°­Îï
+                    int typeIndex = (UnityEngine.Random.Range(0f, 1f) > 0.05f) ? Random.Range(0, ingredientSprites.Count) : (int)M3_ItemType.Obstacle;
                     SpawnPieceAt(x, y, (M3_ItemType)typeIndex, height);
                 }
             }
@@ -375,7 +355,6 @@ public class M3_Board : MonoBehaviour
 
         yield return new WaitForSeconds(speedTime);
 
-        // µİ¹é¼ì²éÆ¥Åä
         List<M3_Piece> newMatches = FindMatches();
         if (newMatches.Count > 0) yield return StartCoroutine(ProcessMatches(newMatches));
         else currentState = BoardState.Idle;

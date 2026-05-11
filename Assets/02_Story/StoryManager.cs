@@ -9,105 +9,136 @@ using UnityEngine.InputSystem;
 
 public class StoryManager : MonoBehaviour
 {
-    [Header("--- ÕÂ½Ú×ÊÔ´¿â ---")]
+    [Header("--- ç« èŠ‚èµ„æºåº“ ---")]
     public List<ChapterConfig> allChapters;
-    private ChapterConfig currentConfig; // µ±Ç°ÕıÔÚ²¥·ÅµÄÕÂ½ÚÅäÖÃ
+    private ChapterConfig currentConfig; // å½“å‰æ­£åœ¨æ’­æ”¾çš„ç« èŠ‚é…ç½®
 
-    [Header("--- UI ×é¼ş ---")]
+    [Header("--- UI ç»„ä»¶ ---")]
     public Image backgroundDisplay;
+    public TextMeshProUGUI chapterTitle;
     public GameObject dialogPanel;
     public TextMeshProUGUI nameText;
     public TextMeshProUGUI dialogText;
     public Image leftCharacter;
     public Image rightCharacter;
 
-    [Header("--- Ñ¡Ïî UI ×é¼ş ---")]
+    [Header("--- é€‰é¡¹ UI ç»„ä»¶ ---")]
     public GameObject choicePanel;
     public GameObject choiceButtonPrefab;
     public Transform choiceButtonContainer;
+    private RenderTexture videoRenderTexture;
 
-    [Header("--- ÊÓÆµ UI ×é¼ş ---")]
+    [Header("--- è§†é¢‘ UI ç»„ä»¶ ---")]
     public GameObject videoPanel;
     public VideoPlayer videoPlayer;
+    public RawImage videoDisplay;
 
     private int currentNodeIndex = 0;
     private int tempAffection = 0;
     private bool isTyping = false;
     private string currentFullText = "";
 
-    // --- ĞÂÔö£ºÅĞ¶ÏÊÇ·ñÎª»Ø¹ËÄ£Ê½ ---
     private bool isReplayMode = false;
+    private bool wasBgmPlaying = false;
+
+    // ã€æ–°å¢ã€‘ï¼šå‰§æƒ…æ’­æ”¾çŠ¶æ€é”ï¼Œé˜²æ­¢åœ¨åœºæ™¯è¿‡æ¸¡æœŸé—´æ„å¤–è§¦å‘ç‚¹å‡»
+    private bool isPlayingStory = false;
+
     void Awake()
     {
-
-        // Ç¿ÖÆ¿ªÆôÈÕÖ¾
+        // å¼ºåˆ¶å¼€å¯æ—¥å¿—
         Debug.unityLogger.logEnabled = true;
-        // È·±£¹ıÂËÆ÷²»¹ıÂËÈÎºÎÀàĞÍ
+        // ç¡®ä¿è¿‡æ»¤å™¨ä¸è¿‡æ»¤ä»»ä½•ç±»å‹
         Debug.unityLogger.filterLogType = LogType.Log;
     }
 
     void Start()
     {
-        // 1. ³õÊ¼»¯UI×´Ì¬
+        if (videoPlayer != null && videoDisplay != null)
+        {
+            videoRenderTexture = new RenderTexture(1280, 788, 0);
+            videoPlayer.renderMode = VideoRenderMode.RenderTexture;
+            videoPlayer.targetTexture = videoRenderTexture;
+            videoDisplay.texture = videoRenderTexture;
+        }
+
+        // åˆå§‹åŒ–UIçŠ¶æ€
         dialogPanel.SetActive(false);
         choicePanel.SetActive(false);
         videoPanel.SetActive(false);
         tempAffection = 0;
-        // 2. »ñÈ¡Ä¿±êÕÂ½Ú ID
+        isPlayingStory = false; // åˆå§‹é”æ­»
+
+        // è·å–ç›®æ ‡ç« èŠ‚ ID
         int savedProgress = SaveManager.Instance.CurrentGameData.currentChapter;
 
-        // »ñÈ¡ÓÃ»§µã»÷Ñ¡ÔñµÄÕÂ½Ú
+        // è·å–ç”¨æˆ·ç‚¹å‡»é€‰æ‹©çš„ç« èŠ‚
         int selectedChapterId = PlayerPrefs.GetInt("SelectedChapterId", savedProgress);
-        // ÅĞ¶ÏÊÇ·ñÎª»Ø¹ËÄ£Ê½
-        // Èç¹ûÑ¡µÄ±Èµ±Ç°´æµµ½ø¶ÈĞ¡£¬¿Ï¶¨ÊÇ»Ø¹Ë
+
+        // åˆ¤æ–­æ˜¯å¦ä¸ºå›é¡¾æ¨¡å¼
         if (selectedChapterId < savedProgress)
         {
             isReplayMode = true;
-            Debug.Log($"[Story] »Ø¹ËÄ£Ê½ (Replay) ID: {selectedChapterId}");
+            Debug.Log($"[Story] å›é¡¾æ¨¡å¼ (Replay) ID: {selectedChapterId}");
         }
         else
         {
             isReplayMode = false;
         }
-        // ÇåÀí Key
+
+        // æ¸…ç† Key
         PlayerPrefs.DeleteKey("SelectedChapterId");
-        // 3. ÅäÖÃ¼ÓÔØ
+
+        // é…ç½®åŠ è½½
         currentConfig = allChapters.Find(c => c.chapterId == selectedChapterId);
         if (currentConfig == null || currentConfig.storyNodes == null || currentConfig.storyNodes.Count == 0)
         {
-            Debug.LogError($"ÅäÖÃ´íÎó£ºÕÒ²»µ½ÕÂ½Ú {selectedChapterId}");
-            SceneManager.LoadScene("01_MainUI");
+            Debug.LogError($"é…ç½®é”™è¯¯ï¼šæ‰¾ä¸åˆ°ç« èŠ‚ {selectedChapterId}");
+            TransitionManager.Instance.SwitchScene("01_MainUI");
             return;
         }
-        // Èç¹û²»ÊÇ»Ø¹ËÄ£Ê½£¬ÇÒµ±Ç°×´Ì¬Îª 2 (Ğ¡ÓÎÏ·½×¶Î)£¬Ö±½ÓÌø×ªĞ¡ÓÎÏ·
-        if (!isReplayMode && SaveManager.Instance.CurrentGameData.chapterSubState == 2)
+
+        // å¦‚æœä¸æ˜¯å›é¡¾æ¨¡å¼ï¼Œä¸”å½“å‰çŠ¶æ€ä¸º 2 (å°æ¸¸æˆé˜¶æ®µ)ï¼Œç›´æ¥è·³è½¬å°æ¸¸æˆ
+        if (!isReplayMode && SaveManager.Instance.CurrentGameData.chapterSubState >= 2)
         {
             if (!string.IsNullOrEmpty(currentConfig.miniGameSceneName))
             {
-                Debug.Log($"[Story] ¼ì²âµ½×´Ì¬Îª 2£¬Ö±½ÓÌø×ªÖÁĞ¡ÓÎÏ·£º{currentConfig.miniGameSceneName}");
-                SceneManager.LoadScene(currentConfig.miniGameSceneName);
-                return; // ÖÕÖ¹ºóĞø Start Âß¼­
+                Debug.Log($"[Story] æ£€æµ‹åˆ°çŠ¶æ€ä¸º 2ï¼Œç›´æ¥è·³è½¬è‡³å°æ¸¸æˆï¼š{currentConfig.miniGameSceneName}");
+
+                // ã€ä¿®å¤ã€‘ï¼šå®‰å…¨æ’­æ”¾å°æ¸¸æˆBGMï¼Œé¿å…è¶Šç•ŒæŠ¥é”™
+                if (currentConfig.storyNodes[0].bgmClip != null)
+                {
+                    BGMManager.Instance.bgm.clip = currentConfig.storyNodes[0].bgmClip;
+                    BGMManager.Instance.bgm.Play();
+                }
+
+                TransitionManager.Instance.SwitchScene(currentConfig.miniGameSceneName);
+                return; // ã€æ³¨æ„ã€‘ï¼šè¿™é‡Œç›´æ¥ returnï¼ŒisPlayingStory ä¿æŒ falseï¼Œå½»åº•é˜»æ–­ Update
             }
             else
             {
-                // Òì³£Çé¿ö£º×´Ì¬ÊÇ2µ«Ã»ÓĞÅäÖÃĞ¡ÓÎÏ·£¬ÖØÖÃ»Ø0²¢³¢ÊÔÕı³£½áÊø
-                Debug.LogWarning("×´Ì¬Îª2µ«ÎŞĞ¡ÓÎÏ·ÅäÖÃ£¬×Ô¶¯ĞŞÕı×´Ì¬");
+                Debug.LogWarning("çŠ¶æ€ä¸º2ä½†æ— å°æ¸¸æˆé…ç½®ï¼Œè‡ªåŠ¨ä¿®æ­£çŠ¶æ€");
                 EndChapterFlow();
                 return;
             }
         }
-        // 4. ¿ªÊ¼²¥·Å¾çÇé
+
+        // --- æ­£å¸¸å¼€å§‹æ’­æ”¾å‰§æƒ… ---
+        isPlayingStory = true; // ã€æ–°å¢ã€‘ï¼šè§£é”å‰§æƒ…é€»è¾‘
         currentNodeIndex = 0;
+        chapterTitle.text = currentConfig.chapterTitle;
         PlayCurrentNode();
     }
 
     void Update()
     {
+        // ã€æ–°å¢ã€‘ï¼šå¦‚æœå‰§æƒ…æ²¡æœ‰åœ¨æ’­æ”¾ï¼ˆæ¯”å¦‚æ­£åœ¨åŠ è½½å°æ¸¸æˆåœºæ™¯ï¼‰ï¼Œç›´æ¥é˜»æ–­æ‰€æœ‰çš„è¾“å…¥æ£€æµ‹ï¼
+        if (!isPlayingStory) return;
+
         if (currentConfig == null || currentConfig.storyNodes == null || currentConfig.storyNodes.Count == 0) return;
 
         if (currentConfig.storyNodes[currentNodeIndex].nodeType == StoryNodeType.Dialog)
         {
-            // Ê¹ÓÃ Input System ¼ì²âµã»÷»ò¿Õ¸ñ
             bool isSkipPressed = false;
 
             if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
@@ -120,14 +151,12 @@ public class StoryManager : MonoBehaviour
             {
                 if (isTyping)
                 {
-                    // Èç¹ûÕıÔÚ´ò×Ö£¬Ë²¼äÏÔÊ¾È«±¾
                     StopAllCoroutines();
                     dialogText.text = currentFullText;
                     isTyping = false;
                 }
                 else
                 {
-                    // Èç¹ûÒÑ¾­ÏÔÊ¾ÍêÁË£¬½øÈëÏÂÒ»¾ä
                     NextNode();
                 }
             }
@@ -140,7 +169,7 @@ public class StoryManager : MonoBehaviour
         if (currentNodeIndex < currentConfig.storyNodes.Count)
             PlayCurrentNode();
         else
-            EndStorySegment(); // ¾çÇé²¿·Ö½áÊø
+            EndStorySegment(); // å‰§æƒ…éƒ¨åˆ†ç»“æŸ
     }
 
     private void PlayCurrentNode()
@@ -151,16 +180,16 @@ public class StoryManager : MonoBehaviour
             if (backgroundDisplay != null)
             {
                 backgroundDisplay.sprite = node.backgroundSprite;
-                // È·±£±³¾°ÊÇÆôÓÃµÄÇÒÑÕÉ«Õı³£
                 backgroundDisplay.gameObject.SetActive(true);
                 backgroundDisplay.color = Color.white;
             }
         }
-        if(node.bgmClip != null)
+        if (node.bgmClip != null)
         {
             BGMManager.Instance.bgm.clip = node.bgmClip;
             BGMManager.Instance.bgm.Play();
         }
+
         switch (node.nodeType)
         {
             case StoryNodeType.Video:
@@ -181,6 +210,14 @@ public class StoryManager : MonoBehaviour
     private void PlayVideo(VideoClip clip)
     {
         if (clip == null) { NextNode(); return; }
+        if (BGMManager.Instance != null && BGMManager.Instance.bgm != null)
+        {
+            wasBgmPlaying = BGMManager.Instance.bgm.isPlaying;
+            if (wasBgmPlaying)
+            {
+                BGMManager.Instance.bgm.Pause();
+            }
+        }
         dialogPanel.SetActive(false);
         choicePanel.SetActive(false);
         videoPanel.SetActive(true);
@@ -188,12 +225,18 @@ public class StoryManager : MonoBehaviour
         videoPlayer.Play();
         videoPlayer.loopPointReached += OnVideoEnd;
     }
+
     private void OnVideoEnd(VideoPlayer vp)
     {
         vp.loopPointReached -= OnVideoEnd;
         videoPanel.SetActive(false);
+        if (wasBgmPlaying && BGMManager.Instance != null && BGMManager.Instance.bgm != null)
+        {
+            BGMManager.Instance.bgm.UnPause();
+        }
         NextNode();
     }
+
     private void PlayDialog(StoryNode node)
     {
         videoPanel.SetActive(false);
@@ -201,12 +244,16 @@ public class StoryManager : MonoBehaviour
         dialogPanel.SetActive(true);
         nameText.text = node.speakerName;
         currentFullText = node.dialogText;
+
         if (node.leftSprite != null) { leftCharacter.sprite = node.leftSprite; leftCharacter.gameObject.SetActive(true); leftCharacter.color = Color.white; }
         else { leftCharacter.gameObject.SetActive(false); }
+
         if (node.rightSprite != null) { rightCharacter.sprite = node.rightSprite; rightCharacter.gameObject.SetActive(true); rightCharacter.color = Color.white; }
         else { rightCharacter.gameObject.SetActive(false); }
+
         StartCoroutine(TypeText());
     }
+
     private IEnumerator TypeText()
     {
         isTyping = true;
@@ -220,8 +267,6 @@ public class StoryManager : MonoBehaviour
         choicePanel.SetActive(true);
         foreach (Transform child in choiceButtonContainer) Destroy(child.gameObject);
 
-        // ÏÔÊ¾Ñ¡ÏîÊ±£¬ĞèÒªÅĞ¶ÏºÃ¸Ğ¶ÈÒªÇó
-        // ×¢Òâ£ºÕâÀï¶ÁÈ¡µÄÊÇµ±Ç°´æµµµÄ×ÜºÃ¸Ğ¶È + ±¾¾ÖÁÙÊ±ºÃ¸Ğ¶È
         int currentTotalAffection = SaveManager.Instance.CurrentGameData.affinity + tempAffection;
 
         foreach (var choice in choices)
@@ -238,7 +283,7 @@ public class StoryManager : MonoBehaviour
             }
             else
             {
-                btnText.text = choice.choiceText + " <color=red>(ºÃ¸Ğ¶È²»×ã)</color>";
+                btnText.text = choice.choiceText + " <color=red>(å¥½æ„Ÿåº¦ä¸è¶³)</color>";
                 btn.interactable = false;
             }
         }
@@ -246,10 +291,7 @@ public class StoryManager : MonoBehaviour
 
     private void OnChoiceSelected(StoryChoice choice)
     {
-        // Ö»ÓĞÔÚ·Ç»Ø¹ËÄ£Ê½ÏÂ£¬»òÕßÎªÁËÁÙÊ±Âß¼­£¬¿ÉÒÔÔö¼Ó tempAffection
-        // µ«ÔÚ EndStorySegment Ê±ÎÒÃÇ»áÀ¹½Ø±£´æ
         tempAffection += choice.addAffection;
-
         choicePanel.SetActive(false);
 
         if (choice.jumpToNodeIndex != -1)
@@ -260,62 +302,52 @@ public class StoryManager : MonoBehaviour
 
     private void EndStorySegment()
     {
-        // 1. ´¦ÀíºÃ¸Ğ¶ÈºÍÉç½»£¨½öÔÚÕı³£ÓÎÏ·Ä£Ê½ÏÂ£©
+        isPlayingStory = false; // ã€æ–°å¢ã€‘ï¼šå‰§æƒ…ç»“æŸï¼Œç«‹åˆ»é”æ­»è¾“å…¥æ£€æµ‹
+
+        // 1. å¤„ç†å¥½æ„Ÿåº¦å’Œç¤¾äº¤
         if (!isReplayMode)
         {
             if (tempAffection != 0)
                 SaveManager.Instance.CurrentGameData.affinity += tempAffection;
 
-            if (currentConfig.socialUpdate != null)
-                InjectSocialUpdate(currentConfig.socialUpdate);
-            // ×¢Òâ£ºÕâÀïÏÈ²»Òª¼±×Å Save£¬¸ù¾İÊÇ·ñÓĞĞ¡ÓÎÏ·¾ö¶¨×´Ì¬
+            if (currentConfig.socialUpdate != null) InjectSocialUpdate(currentConfig.socialUpdate);
         }
-        // 2. ÅĞ¶ÏÊÇ·ñÓĞĞ¡ÓÎÏ·
+
+        // 2. åˆ¤æ–­æ˜¯å¦æœ‰å°æ¸¸æˆ
         if (!string.IsNullOrEmpty(currentConfig.miniGameSceneName))
         {
-            // --- ½øÈëĞ¡ÓÎÏ·Âß¼­ ---
             if (isReplayMode)
             {
                 PlayerPrefs.SetInt("IsReplayMode", 1);
             }
             else
             {
-                // ²»ÊÇ»Ø¹ËÄ£Ê½£¬½øÈëĞ¡ÓÎÏ·Ç°£¬½«×´Ì¬ÉèÎª 2
                 SaveManager.Instance.CurrentGameData.chapterSubState = 2;
                 SaveManager.Instance.SaveCurrentGame();
             }
-            // Ìø×ª
-            SceneManager.LoadScene(currentConfig.miniGameSceneName);
+            TransitionManager.Instance.SwitchScene(currentConfig.miniGameSceneName);
         }
         else
         {
-            // --- Ã»ÓĞĞ¡ÓÎÏ·£¬Ö±½Ó½áÊøÕÂ½Ú ---
             EndChapterFlow();
         }
     }
+
     private void InjectSocialUpdate(SocialUpdateBatch batch)
     {
         GameData data = SaveManager.Instance.CurrentGameData;
-        // A. ´¦ÀíÅóÓÑÈ¦½âËø
         foreach (var moment in batch.unlockMomentIds)
         {
-            //MomentsRepository.Instance.GetMomentById(moment);
             if (!data.unlockedMomentIds.Contains(moment))
-            {
                 data.unlockedMomentIds.Add(moment);
-            }
         }
-        // B. ´¦Àí¶Ô»°ºÍÁªÏµÈË½âËø
+
         foreach (var conv in batch.conversations)
         {
-            // ½âËøÁªÏµÈË
             if (!data.unlockedContactIds.Contains(conv.contactId))
-            {
                 data.unlockedContactIds.Add(conv.contactId);
-            }
-            // »ñÈ¡»ò´´½¨¸ÃÁªÏµÈËµÄÀúÊ·¼ÇÂ¼
+
             ContactHistoryData history = data.GetOrCreateInfo(conv.contactId);
-            // ×¢ÈëĞÂÏûÏ¢
             foreach (var msgText in conv.messages)
             {
                 history.chatLog.Add(new ChatMessage
@@ -326,35 +358,34 @@ public class StoryManager : MonoBehaviour
                     timeStamp = System.DateTime.Now.ToString("HH:mm")
                 });
             }
-            // ÉèÖÃºìµã
             history.hasUnread = true;
-            // ×¢Èë´ı´¦ÀíµÄÍæ¼ÒÑ¡Ïî
             if (conv.replyOptions != null && conv.replyOptions.Count > 0)
-            {
                 history.pendingOptions = new List<ChatReplyOption>(conv.replyOptions);
-            }
         }
-        Debug.Log("[StoryManager] Éç½»Êı¾İÒÑ³É¹¦×¢Èë´æµµ¡£");
+        Debug.Log("[StoryManager] ç¤¾äº¤æ•°æ®å·²æˆåŠŸæ³¨å…¥å­˜æ¡£ã€‚");
     }
 
-    // ´¦ÀíÎŞĞ¡ÓÎÏ·µÄÕÂ½Ú½áÊø£¬»ò´ÓĞ¡ÓÎÏ··µ»Ø£¨Èç¹ûÂß¼­ÔÚÕâµÄ»°£©
     private void EndChapterFlow()
     {
         if (!isReplayMode && currentConfig != null)
         {
-            // Õı³£ÍÆ½ø£º½øÈëÏÂÒ»ÕÂ
             SaveManager.Instance.CurrentGameData.currentChapter = currentConfig.nextChapterId;
-
-            // --- ºËĞÄĞŞ¸Ä£ºÖØÖÃ subState Îª 0 (µÈ´ıÏÂÒ»ÕÂ¿ªÆô) ---
             SaveManager.Instance.CurrentGameData.chapterSubState = 0;
-
             SaveManager.Instance.SaveCurrentGame();
-            Debug.Log($"[Story] ÕÂ½Ú½áÊø£¬½ø¶È¸üĞÂÎª: {currentConfig.nextChapterId}, ×´Ì¬ÖØÖÃÎª 0");
+            Debug.Log($"[Story] ç« èŠ‚ç»“æŸï¼Œè¿›åº¦æ›´æ–°ä¸º: {currentConfig.nextChapterId}, çŠ¶æ€é‡ç½®ä¸º 0");
         }
         else
         {
-            Debug.Log("[Story] »Ø¹ËÄ£Ê½½áÊø£¬²»¸üĞÂ½ø¶È");
+            Debug.Log("[Story] å›é¡¾æ¨¡å¼ç»“æŸï¼Œä¸æ›´æ–°è¿›åº¦");
         }
-        SceneManager.LoadScene("01_MainUI");
+        TransitionManager.Instance.SwitchScene("01_MainUI");
+    }
+
+    private void OnDestroy()
+    {
+        if (videoRenderTexture != null)
+        {
+            videoRenderTexture.Release();
+        }
     }
 }

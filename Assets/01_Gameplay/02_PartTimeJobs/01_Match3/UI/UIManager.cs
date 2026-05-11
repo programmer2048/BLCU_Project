@@ -15,28 +15,28 @@ public class M3_UIManager : MonoBehaviour
     public TextMeshProUGUI finalScore;
     public TextMeshProUGUI finalReawrd;
 
-    // --- ÖØµã£ºÖ±½ÓÉùÃ÷°´Å¥ÒýÓÃ ---
+    // --- é‡ç‚¹ï¼šç›´æŽ¥å£°æ˜ŽæŒ‰é’®å¼•ç”¨ ---
     [Header("Buttons (Assign in Inspector)")]
-    public Button pauseHUDButton;     // ÆÁÄ»ÓÒÉÏ½ÇµÄÔÝÍ£°´Å¥
-    public Button resumeBtn;          // ÔÝÍ£Ãæ°åÀïµÄ¼ÌÐø°´Å¥
-    public Button restartBtnPause;    // ÔÝÍ£Ãæ°åÀïµÄÖØ¿ª°´Å¥
-    public Button restartBtnGameOver; // ½áËãÃæ°åÀïµÄÖØ¿ª°´Å¥
-    public Button menuBtnPause;       // ÔÝÍ£Ãæ°åÀïµÄÖ÷Ò³°´Å¥
-    public Button menuBtnGameOver;    // ½áËãÃæ°åÀïµÄÖ÷Ò³°´Å¥
+    public Button pauseHUDButton;     // å±å¹•å³ä¸Šè§’çš„æš‚åœæŒ‰é’®
+    public Button resumeBtn;          // æš‚åœé¢æ¿é‡Œçš„ç»§ç»­æŒ‰é’®
+    public Button restartBtnPause;    // æš‚åœé¢æ¿é‡Œçš„é‡å¼€æŒ‰é’®
+    public Button restartBtnGameOver; // ç»“ç®—é¢æ¿é‡Œçš„é‡å¼€æŒ‰é’®
+    public Button menuBtnPause;       // æš‚åœé¢æ¿é‡Œçš„ä¸»é¡µæŒ‰é’®
+    public Button menuBtnGameOver;    // ç»“ç®—é¢æ¿é‡Œçš„ä¸»é¡µæŒ‰é’®
 
     void Start()
     {
-        // 1. ³õÊ¼»¯Êý¾Ý
+        // 1. åˆå§‹åŒ–æ•°æ®
         InitHUD();
 
-        // 2. Òþ²ØÃæ°å
+        // 2. éšè—é¢æ¿
         if (pausePanel) pausePanel.SetActive(false);
         if (gameOverPanel) gameOverPanel.SetActive(false);
 
-        // 3. ´úÂë°ó¶¨µã»÷ÊÂ¼þ
+        // 3. ä»£ç ç»‘å®šç‚¹å‡»äº‹ä»¶
         BindButtonEvents();
 
-        // 4. ×¢²á GameManager ÊÂ¼þ
+        // 4. æ³¨å†Œ GameManager äº‹ä»¶
         RegisterGMEvents();
     }
 
@@ -76,7 +76,7 @@ public class M3_UIManager : MonoBehaviour
 
     private void InitHUD()
     {
-        if (scoreText) scoreText.text = "$0";
+        if (scoreText) scoreText.text = "ï¿¥0";
         if (healthSlider)
         {
             healthSlider.maxValue = M3_GameManager.Instance.maxHealth;
@@ -86,7 +86,7 @@ public class M3_UIManager : MonoBehaviour
 
     void OnDestroy()
     {
-        // ¼ÇµÃÇåÀí GameManager ÊÂ¼þ
+        // è®°å¾—æ¸…ç† GameManager äº‹ä»¶
         if (M3_GameManager.Instance != null)
         {
             M3_GameManager.Instance.OnScoreChanged -= UpdateScore;
@@ -105,7 +105,7 @@ public class M3_UIManager : MonoBehaviour
         }
     }
 
-    void UpdateScore(int newScore) => scoreText.text = $"${newScore}";
+    void UpdateScore(int newScore) => scoreText.text = $"ï¿¥{newScore}";
     void UpdateHealth(int newHealth) => healthSlider.value = newHealth;
 
     void UpdateTimer(float time)
@@ -125,6 +125,6 @@ public class M3_UIManager : MonoBehaviour
         if (pausePanel) pausePanel.SetActive(false);
         if (gameOverPanel) gameOverPanel.SetActive(true);
         finalScore.text = $"{M3_GameManager.Instance.currentScore}";
-        finalReawrd.text = $"»ñµÃÂÃ·Ñ£º${M3_GameManager.Instance.currentScore}";
+        finalReawrd.text = $"èŽ·å¾—æ—…è´¹ï¼šï¿¥{M3_GameManager.Instance.currentScore}";
     }
 }

@@ -6,12 +6,12 @@ public class JigsawManager : MonoBehaviour
 {
     public static JigsawManager Instance;
 
-    [Header("ºËĞÄ¶ÔÏó")]
+    [Header("æ ¸å¿ƒå¯¹è±¡")]
     public GameObject piecesParent; 
     public GameObject completeImage; 
     public GameObject victoryPanel;   
 
-    [Header("ÉèÖÃ")]
+    [Header("è®¾ç½®")]
     public int totalPieces = 10;
 
     private int lockedCount = 0;
@@ -30,19 +30,19 @@ public class JigsawManager : MonoBehaviour
         lockedCount = 0;
     }
 
-    // ÓÉ JigsawPiece µ÷ÓÃ
+    // ç”± JigsawPiece è°ƒç”¨
     public void OnPieceLocked()
     {
         lockedCount++;
 
-        // ¼ì²éÊÇ·ñÈ«²¿Æ´Íê
+        // æ£€æŸ¥æ˜¯å¦å…¨éƒ¨æ‹¼å®Œ
         if (lockedCount >= totalPieces)
         {
             StartCoroutine(WinSequence());
         }
     }
 
-    // Ê¤ÀûÁ÷³ÌĞ­³Ì
+    // èƒœåˆ©æµç¨‹åç¨‹
     IEnumerator WinSequence()
     {
         yield return new WaitForSeconds(0.2f);
@@ -50,17 +50,14 @@ public class JigsawManager : MonoBehaviour
         if (piecesParent != null) piecesParent.SetActive(false);
         if (completeImage != null) completeImage.SetActive(true);
 
-        // ¿ÉÑ¡£ºÔÚÕâÀï²¥·ÅÒ»¸ö¡°¹âĞ§¡±»ò¡°ÒôĞ§¡±£¬ÑÚ¸ÇÌæ»»Ê±µÄÍ»Ø£¸Ğ
+        // å¯é€‰ï¼šåœ¨è¿™é‡Œæ’­æ”¾ä¸€ä¸ªâ€œå…‰æ•ˆâ€æˆ–â€œéŸ³æ•ˆâ€ï¼Œæ©ç›–æ›¿æ¢æ—¶çš„çªå…€æ„Ÿ
         // AudioManager.Play("LevelComplete");
 
         yield return new WaitForSeconds(1.0f);
 
         if (victoryPanel != null) victoryPanel.SetActive(true);
 
-        SaveManager.Instance.CurrentGameData.chapterSubState = 0;
-        SaveManager.Instance.CurrentGameData.currentChapter = 2;
-
-        Debug.Log("ÓÎÏ·Ê¤ÀûÁ÷³Ì½áÊø");
+        Debug.Log("æ¸¸æˆèƒœåˆ©æµç¨‹ç»“æŸ");
     }
 
     public void ExitToMap()
@@ -74,10 +71,10 @@ public class JigsawManager : MonoBehaviour
                 SaveManager.Instance.CurrentGameData.chapterSubState = 0;
                 SaveManager.Instance.SaveCurrentGame();
             }
-            // ÇåÀí Replay ±ê¼Ç
+            // æ¸…ç† Replay æ ‡è®°
             PlayerPrefs.DeleteKey("IsReplayMode");
-            // ·µ»ØÖ÷½çÃæ
-            SceneManager.LoadScene("01_MainUI");
+            // è¿”å›ä¸»ç•Œé¢
+            TransitionManager.Instance.SwitchScene("01_MainUI");
         }
     }
 }

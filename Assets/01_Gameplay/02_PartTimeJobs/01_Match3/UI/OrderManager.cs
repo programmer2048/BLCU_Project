@@ -6,14 +6,14 @@ public class OrderManager : MonoBehaviour
     public static OrderManager Instance { get; private set; }
 
     [Header("References")]
-    public GameObject trayPrefab;      // ÍĞÅÌPrefab
-    public Transform trayContainer;    // CanvasÏÂÓÃÀ´·ÅÍĞÅÌµÄPanel
+    public GameObject trayPrefab;      // æ‰˜ç›˜Prefab
+    public Transform trayContainer;    // Canvasä¸‹ç”¨æ¥æ”¾æ‰˜ç›˜çš„Panel
 
     [Header("Spawn Settings")]
     public float spawnInterval = 3f;
     private float _timer;
 
-    // ¹ÜÀíËùÓĞ»î¶¯µÄ¶©µ¥£¬·½±ã²éÕÒ
+    // ç®¡ç†æ‰€æœ‰æ´»åŠ¨çš„è®¢å•ï¼Œæ–¹ä¾¿æŸ¥æ‰¾
     private List<TrayController> activeOrders = new List<TrayController>();
 
     public M3_Board gameBoard;
@@ -21,9 +21,9 @@ public class OrderManager : MonoBehaviour
     void Awake()
     {
 
-        // Ç¿ÖÆ¿ªÆôÈÕÖ¾
+        // å¼ºåˆ¶å¼€å¯æ—¥å¿—
         Debug.unityLogger.logEnabled = true;
-        // È·±£¹ıÂËÆ÷²»¹ıÂËÈÎºÎÀàĞÍ
+        // ç¡®ä¿è¿‡æ»¤å™¨ä¸è¿‡æ»¤ä»»ä½•ç±»å‹
         Debug.unityLogger.filterLogType = LogType.Log;
         Instance = this;
     }
@@ -51,19 +51,19 @@ public class OrderManager : MonoBehaviour
     {
         if (gameBoard == null || gameBoard.itemSprites == null || gameBoard.itemSprites.Count == 0)
         {
-            Debug.LogError("OrderManager: È±ÉÙ GameBoard ÒıÓÃ»ò Sprite ÁĞ±íÎª¿Õ£¡");
+            Debug.LogError("OrderManager: ç¼ºå°‘ GameBoard å¼•ç”¨æˆ– Sprite åˆ—è¡¨ä¸ºç©ºï¼");
             return;
         }
         GameObject go = Instantiate(trayPrefab, trayContainer);
         TrayController tray = go.GetComponent<TrayController>();
-        // 1. Ëæ»úÒ»¸öÀàĞÍ
+        // 1. éšæœºä¸€ä¸ªç±»å‹
         int typeIndex = Random.Range(0, gameBoard.itemSprites.Count);
         M3_ItemType randomType = (M3_ItemType)typeIndex;
-        // 2. »ñÈ¡¶ÔÓ¦µÄÍ¼Æ¬ (±ØĞëÓÃÍ¬Ò»¸ö Index)
+        // 2. è·å–å¯¹åº”çš„å›¾ç‰‡ (å¿…é¡»ç”¨åŒä¸€ä¸ª Index)
         Sprite correctSprite = gameBoard.itemSprites[typeIndex];
-        // 3. Ëæ»úÊıÁ¿
-        int count = Random.Range(3, 6);
-        // 4. ³õÊ¼»¯ Tray
+        // 3. éšæœºæ•°é‡
+        int count = Random.Range(3,5);
+        // 4. åˆå§‹åŒ– Tray
         tray.Init(randomType, correctSprite, count);
 
         activeOrders.Add(tray);
@@ -73,7 +73,7 @@ public class OrderManager : MonoBehaviour
     {
         foreach (var tray in activeOrders)
         {
-            // Ö»ÓĞÎ´Íê³ÉÇÒÀàĞÍÆ¥ÅäµÄ²Å·µ»Ø
+            // åªæœ‰æœªå®Œæˆä¸”ç±»å‹åŒ¹é…çš„æ‰è¿”å›
             if (!tray.IsCompleted && tray.RequiredType == type)
             {
                 return tray;
@@ -82,11 +82,11 @@ public class OrderManager : MonoBehaviour
         return null;
     }
 
-    // ¶©µ¥³¬Ê±/Ê§°ÜÊ±µ÷ÓÃ
+    // è®¢å•è¶…æ—¶/å¤±è´¥æ—¶è°ƒç”¨
     public void OnOrderFailed(TrayController tray)
     {
         //Debug.Log(M3_GameManager.Instance.currentHealth);
-        M3_GameManager.Instance.ModifyHealth(-1*(tray.requiredCount-tray.currentCount)); // ¿ÛÑª
+        M3_GameManager.Instance.ModifyHealth(-1*(tray.requiredCount-tray.currentCount)); // æ‰£è¡€
         //Debug.Log(M3_GameManager.Instance.currentHealth);
         if (activeOrders.Contains(tray))
         {

@@ -4,59 +4,59 @@ using UnityEngine.SceneManagement;
 
 public class AlbumController : MonoBehaviour
 {
-    [Header("ĞÅÎï°´Å¥ (°´ÕÂ½ÚË³Ğò1-4ÅÅÁĞ)")]
+    [Header("ä¿¡ç‰©æŒ‰é’® (æŒ‰ç« èŠ‚é¡ºåº1-4æ’åˆ—)")]
     public GameObject[] itemButtons;
 
-    [Header("¶ÔÓ¦µÄÊé¼®µ¯´° (°´ÕÂ½ÚË³Ğò1-4ÅÅÁĞ)")]
+    [Header("å¯¹åº”çš„ä¹¦ç±å¼¹çª— (æŒ‰ç« èŠ‚é¡ºåº1-4æ’åˆ—)")]
     public GameObject[] bookPanels;
 
-    [Header("±³¾°ÕÚÕÖ²ã")]
+    [Header("èƒŒæ™¯é®ç½©å±‚")]
     public Button maskButton;
     public Image bookBk;
 
     private void Start()
     {
         BGMManager.Instance.bgm.Play();
-        // 1. ³õÊ¼»¯µ¯´°ºÍÕÚÕÖ£¨È«¹Øµô£©
+        // 1. åˆå§‹åŒ–å¼¹çª—å’Œé®ç½©ï¼ˆå…¨å…³æ‰ï¼‰
         CloseAllBooks();
 
-        // 2. °ó¶¨ÕÚÕÖµã»÷ÊÂ¼ş
+        // 2. ç»‘å®šé®ç½©ç‚¹å‡»äº‹ä»¶
         if (maskButton != null)
         {
             maskButton.onClick.AddListener(CloseAllBooks);
         }
 
-        // 3. Ë¢ĞÂĞÅÎïµÄÏÔÊ¾×´Ì¬
+        // 3. åˆ·æ–°ä¿¡ç‰©çš„æ˜¾ç¤ºçŠ¶æ€
         RefreshItemsUnlockState();
     }
 
     public void Exit()
     {
-        SceneManager.LoadScene("01_MainUI");
+        TransitionManager.Instance.SwitchScene("01_MainUI");
     }
     private void RefreshItemsUnlockState()
     {
-        // »ñÈ¡µ±Ç°´æµµÊı¾İ
+        // è·å–å½“å‰å­˜æ¡£æ•°æ®
         GameData data = SaveManager.Instance.CurrentGameData;
         if (data == null)
         {
-            Debug.LogWarning("[Album] Ã»ÕÒµ½´æµµÊı¾İ£¬¿ÉÄÜÊÇÔÚ²âÊÔÄ£Ê½¡£");
+            Debug.LogWarning("[Album] æ²¡æ‰¾åˆ°å­˜æ¡£æ•°æ®ï¼Œå¯èƒ½æ˜¯åœ¨æµ‹è¯•æ¨¡å¼ã€‚");
             return;
         }
 
-        // ÕâÀï¼ÙÉè£ºÒÑ¾­´ò¹ı£¨»òµ½´ï£©µÚ N ÕÂ£¬¾Í½âËøÇ° N ¸öĞÅÎï
-        // Èç¹ûÄãµÄÂß¼­ÊÇ¹ı¹Ø²Å½âËø£¬¿ÉÒÔÓÃ data.currentChapter > i+1
+        // è¿™é‡Œå‡è®¾ï¼šå·²ç»æ‰“è¿‡ï¼ˆæˆ–åˆ°è¾¾ï¼‰ç¬¬ N ç« ï¼Œå°±è§£é”å‰ N ä¸ªä¿¡ç‰©
+        // å¦‚æœä½ çš„é€»è¾‘æ˜¯è¿‡å…³æ‰è§£é”ï¼Œå¯ä»¥ç”¨ data.currentChapter > i+1
         int currentChap = data.currentChapter;
 
         for (int i = 0; i < itemButtons.Length; i++)
         {
-            // ¼ÙÉèĞÅÎïË÷Òı0¶ÔÓ¦µÚ1ÕÂ£¬Ë÷Òı1¶ÔÓ¦µÚ2ÕÂ...
+            // å‡è®¾ä¿¡ç‰©ç´¢å¼•0å¯¹åº”ç¬¬1ç« ï¼Œç´¢å¼•1å¯¹åº”ç¬¬2ç« ...
             int requiredChapter = i + 1;
 
-            // ÅĞ¶ÏÊÇ·ñ½âËø£ºÖ»Òªµ±Ç°ÕÂ½Ú >= ĞèÒªµÄÕÂ½Ú£¬¾ÍÏÔÊ¾ĞÅÎï
+            // åˆ¤æ–­æ˜¯å¦è§£é”ï¼šåªè¦å½“å‰ç« èŠ‚ >= éœ€è¦çš„ç« èŠ‚ï¼Œå°±æ˜¾ç¤ºä¿¡ç‰©
             bool isUnlocked = currentChap > requiredChapter;
 
-            // Ò²¿ÉÒÔÓÃÄãµÄ collectedInfoIds À´ÅĞ¶Ï£º
+            // ä¹Ÿå¯ä»¥ç”¨ä½ çš„ collectedInfoIds æ¥åˆ¤æ–­ï¼š
             // bool isUnlocked = data.HasInfo("ChapterItem_" + requiredChapter);
 
             itemButtons[i].SetActive(isUnlocked);
@@ -65,14 +65,14 @@ public class AlbumController : MonoBehaviour
 
     public void OpenBook(int bookIndex)
     {
-        // °²È«Ğ£Ñé
+        // å®‰å…¨æ ¡éªŒ
         if (bookIndex < 0 || bookIndex >= bookPanels.Length) return;
 
-        // ´ò¿ªÕÚÕÖ
+        // æ‰“å¼€é®ç½©
         maskButton.gameObject.SetActive(true);
         bookBk.gameObject.SetActive(true);
 
-        // ¹ØµôËùÓĞÊé£¬Ö»´ò¿ªµãÑ¡µÄÄÇ±¾
+        // å…³æ‰æ‰€æœ‰ä¹¦ï¼Œåªæ‰“å¼€ç‚¹é€‰çš„é‚£æœ¬
         for (int i = 0; i < bookPanels.Length; i++)
         {
             bookPanels[i].SetActive(i == bookIndex);

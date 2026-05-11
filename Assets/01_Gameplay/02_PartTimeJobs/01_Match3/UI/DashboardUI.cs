@@ -49,7 +49,7 @@ public class DashboardUI : MonoBehaviour
 
     void UpdateScore(int newScore)
     {
-        scoreText.text = $"${newScore}";
+        scoreText.text = $"гд{newScore}";
     }
 
     void UpdateHealth(int newHealth)
